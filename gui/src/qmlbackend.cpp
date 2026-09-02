@@ -26,6 +26,7 @@
 #include <QMetaObject>
 #include <QtGlobal>
 #include <QGuiApplication>
+#include <QScreen>
 #include <QPixmap>
 #include <QImageReader>
 #include <QProcessEnvironment>
@@ -2382,20 +2383,58 @@ void QmlBackend::applyStartupWindowSizing()
     if (window->windowState() == Qt::WindowFullScreen)
         return;
 
+    // Clamp the target size to the screen's available geometry so the
+    // stream window never starts larger than the visible desktop area
+    // (e.g. a 1920x1080 stream window on a 1512x982 MacBook screen).
+    const auto clampToScreen = [this](int width, int height) -> QSize {
+        QScreen *screen = window->screen();
+        if (!screen)
+            screen = QGuiApplication::primaryScreen();
+        if (!screen || width <= 0 || height <= 0)
+            return QSize(width, height);
+        const QRect available = screen->availableGeometry();
+        const int max_w = available.width();
+        const int max_h = available.height();
+        const int w = qMin(width, max_w);
+        const int h = qMin(height, max_h);
+        // keep the aspect ratio of the requested size while clamping
+        if (w < width || h < height)
+        {
+            const qreal scale = qMin(static_cast<qreal>(w) / width, static_cast<qreal>(h) / height);
+            return QSize(qRound(width * scale), qRound(height * scale));
+        }
+        return QSize(w, h);
+    };
+
     if(settings->GetWindowType() == WindowType::CustomResolution)
     {
-        window->resize(settings->GetCustomResolutionWidth(), settings->GetCustomResolutionHeight());
-        window->setMaximumSize(QSize(settings->GetCustomResolutionWidth(), settings->GetCustomResolutionHeight()));
+        const QSize clamped = clampToScreen(settings->GetCustomResolutionWidth(), settings->GetCustomResolutionHeight());
+        window->resize(clamped);
+        window->setMaximumSize(clamped);
     }
     else if(settings->GetWindowType() == WindowType::AdjustableResolution)
     {
         window->normalTime();
         if(!settings->GetStreamGeometry().isEmpty())
-            window->setGeometry(settings->GetStreamGeometry());
+        {
+            QRect geo = settings->GetStreamGeometry();
+            QScreen *screen = window->screen();
+            if (!screen)
+                screen = QGuiApplication::primaryScreen();
+            if (screen)
+            {
+                const QRect available = screen->availableGeometry();
+                // move the saved geometry back into the visible area if needed
+                geo = geo.intersected(QRect(available.topLeft(), geo.size()));
+                if (geo.width() > available.width() || geo.height() > available.height())
+                    geo.setSize(geo.size().boundedTo(available.size()));
+            }
+            window->setGeometry(geo);
+        }
     }
     else if (connect_info.video_profile.width > 0 && connect_info.video_profile.height > 0)
     {
-        window->resize(connect_info.video_profile.width, connect_info.video_profile.height);
+        window->resize(clampToScreen(connect_info.video_profile.width, connect_info.video_profile.height));
     }
 }
 

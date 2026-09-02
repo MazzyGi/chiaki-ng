@@ -40,6 +40,9 @@ int main(int argc, char *argv[]) { return real_main(argc, argv); }
 #include <QCommandLineParser>
 #include <QMap>
 #include <QSurfaceFormat>
+#include <QTranslator>
+#include <QLocale>
+#include <QFile>
 
 Q_DECLARE_METATYPE(ChiakiLogLevel)
 Q_DECLARE_METATYPE(ChiakiRegistEventType)
@@ -124,6 +127,28 @@ int real_main(int argc, char *argv[])
 	QtWebEngineQuick::initialize();
 #endif
 	QApplication app(argc, argv);
+
+	// Load translation matching the system locale (e.g. zh_CN -> chiaki_ng_zh_CN.qm)
+	{
+		const QString locale = QLocale::system().name();
+		QStringList candidates;
+#if defined(Q_OS_MACOS)
+		candidates << QCoreApplication::applicationDirPath() + "/../Resources/translations";
+#endif
+		candidates << QCoreApplication::applicationDirPath() + "/translations"
+			<< QCoreApplication::applicationDirPath()
+			<< QStringLiteral(":/translations");
+		QTranslator *translator = new QTranslator(&app);
+		for (const QString &dir : qAsConst(candidates))
+		{
+			const QString path = dir + "/chiaki_ng_" + locale + ".qm";
+			if (QFile::exists(path) && translator->load(path))
+			{
+				QCoreApplication::installTranslator(translator);
+				break;
+			}
+		}
+	}
 
 #ifdef Q_OS_MACOS
 	QGuiApplication::setWindowIcon(QIcon(":/icons/chiaking_macos.svg"));

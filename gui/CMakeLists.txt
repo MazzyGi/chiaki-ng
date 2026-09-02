@@ -88,11 +88,28 @@ elseif(WIN32)
 	)
 endif()
 
+# --- Translations (lrelease) ---
+# Hand-maintained .ts files; compile to .qm and ship them.
+set(TRANSLATION_TS_FILES
+	translations/chiaki_ng_zh_CN.ts
+)
+find_package(Qt6 REQUIRED COMPONENTS LinguistTools)
+qt_add_translation(QM_FILES ${TRANSLATION_TS_FILES})
+set_source_files_properties(${QM_FILES} PROPERTIES
+	MACOSX_PACKAGE_LOCATION "Resources/translations")
+add_custom_target(translations ALL DEPENDS ${QM_FILES})
+if(WIN32)
+	install(FILES ${QM_FILES} DESTINATION "translations")
+endif()
+# --- End translations ---
+
 add_executable(chiaki WIN32
 		${RESOURCE_FILES}
 		${SOURCE_FILES}
+		${QM_FILES}
 )
 target_include_directories(chiaki PRIVATE include)
+
 
 add_library(placebo-libav-impl src/libav_impl.c)
 target_link_libraries(placebo-libav-impl PkgConfig::LIBPLACEBO FFMPEG::avcodec FFMPEG::avutil FFMPEG::avformat)
