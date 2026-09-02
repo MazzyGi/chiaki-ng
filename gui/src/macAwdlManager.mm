@@ -3,6 +3,7 @@
 
 #import <Security/Security.h>
 #import <Foundation/Foundation.h>
+#import <IOKit/pwr_mgt/IOPMLib.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -17,8 +18,6 @@ static bool awdl_interface_is_up()
     {
         if (strstr(buf, "flags="))
         {
-            // e.g. flags=8943<UP,BROADCAST,RUNNING,...>  ->  up
-            //      flags=8822<BROADCAST,RUNNING,...>     ->  down
             up = strstr(buf, "<UP") != nullptr || strstr(buf, ",UP,") != nullptr;
             break;
         }
@@ -58,4 +57,38 @@ void mac_awdl_restore_on_exit()
 {
     if (!awdl_interface_is_up())
         run_privileged_ifconfig("up");
+}
+
+void *mac_keep_awake_begin()
+{
+    // prevent display sleep + system idle sleep while streaming
+    IOPMAssertionID assertion_id = 0;
+    CFStringRef reasons[2] = {
+        CFSTR("chiaki-ng display keep awake"),
+        CFSTR("chiaki-ng system keep awake")
+    };
+    IOPMAssertionType types[2] = { kIOPMAssertionTypePreventUserIdleDisplaySleep,
+                                   kIOPMAssertionTypePreventUserIdleSystemSleep };
+    for (int i = 0; i < 2; i++)
+    {
+        IOPMAssertionID id = 0;
+        if (IOPMAssertionCreateWithName(types[i], kIOPMAssertionLevelOn, reasons[i], &id) == kIOReturnSuccess)
+        {
+            if (assertion_id == 0)
+                assertion_id = id;
+            else
+            {
+                // keep both alive; store the first, let the second live for
+                // process lifetime (auto-released by the system on exit)
+            }
+        }
+    }
+    return reinterpret_cast<void *>(static_cast<uintptr_t>(assertion_id));
+}
+
+void mac_keep_awake_end(void *handle)
+{
+    IOPMAssertionID id = static_cast<IOPMAssertionID>(reinterpret_cast<uintptr_t>(handle));
+    if (id)
+        IOPMAssertionRelease(id);
 }

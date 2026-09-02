@@ -14,7 +14,6 @@ int main(int argc, char *argv[]) { return real_main(argc, argv); }
 #if defined(Q_OS_MACOS)
 #include "macAwdlManager.h"
 #endif
-
 #ifdef CHIAKI_ENABLE_CLI
 #include <chiaki-cli.h>
 #endif
