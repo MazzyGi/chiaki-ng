@@ -52,16 +52,24 @@ jobs:
           then
             ln -s ../../../../../../../Frameworks chiaki-ng.app/Contents/Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents
           fi
-          cp /usr/local/lib/libSDL3.dylib chiaki-ng.app/Contents/MacOS/libSDL3.dylib || true
-          cp /usr/local/lib/libSDL2-2.0.0.dylib chiaki-ng.app/Contents/MacOS/libSDL2-2.0.0.dylib || true
-          install_name_tool -id @executable_path/libSDL3.dylib chiaki-ng.app/Contents/MacOS/libSDL3.dylib || true
-          install_name_tool -id @executable_path/libSDL2-2.0.0.dylib chiaki-ng.app/Contents/MacOS/libSDL2-2.0.0.dylib || true
-          install_name_tool -change /usr/local/lib/libSDL3.dylib @executable_path/libSDL3.dylib chiaki-ng.app/Contents/MacOS/libSDL2-2.0.0.dylib || true
-          install_name_tool -change @rpath/libSDL3.dylib @executable_path/libSDL3.dylib chiaki-ng.app/Contents/MacOS/libSDL2-2.0.0.dylib || true
-          install_name_tool -change /opt/homebrew/lib/libSDL3.dylib @executable_path/libSDL3.dylib chiaki-ng.app/Contents/MacOS/libSDL2-2.0.0.dylib || true
-          install_name_tool -change /usr/local/lib/libSDL2-2.0.0.dylib @executable_path/libSDL2-2.0.0.dylib chiaki-ng.app/Contents/MacOS/chiaki || true
-          install_name_tool -change @rpath/libSDL2-2.0.0.dylib @executable_path/libSDL2-2.0.0.dylib chiaki-ng.app/Contents/MacOS/chiaki || true
-          install_name_tool -change /opt/homebrew/lib/libSDL2-2.0.0.dylib @executable_path/libSDL2-2.0.0.dylib chiaki-ng.app/Contents/MacOS/chiaki || true
+          # Deploy SDL2 from brew (name varies by version) into MacOS/
+          BREW_LIB=$(brew --prefix)/lib
+          SDL_DYLIB=$(ls "$BREW_LIB"/libSDL2-2*.dylib 2>/dev/null | head -1 || true)
+          if [ -z "$SDL_DYLIB" ]; then
+            SDL_DYLIB=$(ls "$BREW_LIB"/libSDL2*.dylib 2>/dev/null | grep -v SDL2main | head -1 || true)
+          fi
+          if [ -n "$SDL_DYLIB" ]; then
+            cp "$SDL_DYLIB" chiaki-ng.app/Contents/MacOS/libSDL2-2.0.0.dylib
+            install_name_tool -id @executable_path/libSDL2-2.0.0.dylib chiaki-ng.app/Contents/MacOS/libSDL2-2.0.0.dylib
+            SDL_REF=$(otool -L chiaki-ng.app/Contents/MacOS/chiaki | grep -i sdl2 | awk '{print $1}' | head -1 || true)
+            if [ -n "$SDL_REF" ]; then
+              install_name_tool -change "$SDL_REF" @executable_path/libSDL2-2.0.0.dylib chiaki-ng.app/Contents/MacOS/chiaki || true
+            fi
+            install_name_tool -change "$SDL_DYLIB" @executable_path/libSDL2-2.0.0.dylib chiaki-ng.app/Contents/MacOS/chiaki || true
+            install_name_tool -change @rpath/libSDL2-2.0.0.dylib @executable_path/libSDL2-2.0.0.dylib chiaki-ng.app/Contents/MacOS/chiaki || true
+            install_name_tool -change /usr/local/lib/libSDL2-2.0.0.dylib @executable_path/libSDL2-2.0.0.dylib chiaki-ng.app/Contents/MacOS/chiaki || true
+            install_name_tool -change /opt/homebrew/lib/libSDL2-2.0.0.dylib @executable_path/libSDL2-2.0.0.dylib chiaki-ng.app/Contents/MacOS/chiaki || true
+          fi
           ln -s libvulkan.1.dylib chiaki-ng.app/Contents/Frameworks/vulkan || true
           codesign --force --entitlements gui/entitlements.xml --deep --sign - chiaki-ng.app
           rm -f chiaki-ng.dmg
