@@ -31,9 +31,9 @@ jobs:
 
       - name: Build real SDL2 (not sdl2-compat)
         run: |
-          curl -L https://github.com/libsdl-org/SDL/releases/download/release-2.30.22/SDL2-2.30.22.tar.gz -o sdl2.tar.gz
+          curl -L https://github.com/libsdl-org/SDL/releases/download/release-2.30.12/SDL2-2.30.12.tar.gz -o sdl2.tar.gz
           tar xf sdl2.tar.gz
-          cd SDL2-2.30.22
+          cd SDL2-2.30.12
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_OSX_ARCHITECTURES="arm64" \
             -DSDL_SHARED=ON -DSDL_STATIC=OFF -DSDL_TEST=OFF \
@@ -43,7 +43,7 @@ jobs:
           sudo cmake --install build
           sudo ln -sf /usr/local/lib/libSDL2-2.0.0.dylib /opt/homebrew/lib/libSDL2-2.0.0.dylib 2>/dev/null || true
           cd ..
-          rm -rf SDL2-2.30.22 sdl2.tar.gz
+          rm -rf SDL2-2.30.12 sdl2.tar.gz
           echo "real SDL2 installed:"
           otool -L /usr/local/lib/libSDL2-2.0.0.dylib | head -6
 
