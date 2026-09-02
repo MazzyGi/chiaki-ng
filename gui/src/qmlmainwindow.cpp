@@ -4646,7 +4646,7 @@ AVBufferRef *QmlMainWindow::vulkanHwDeviceCtx()
         vkctx->qf[nb_qf].idx = idx;
         vkctx->qf[nb_qf].num = num;
         vkctx->qf[nb_qf].flags = flags;
-        vkctx->qf[nb_qf].video_caps = 0;
+        vkctx->qf[nb_qf].video_caps = static_cast<VkVideoCodecOperationFlagBitsKHR>(0);
         nb_qf++;
     };
     qf_add(placebo_vulkan->queue_graphics.index, placebo_vulkan->queue_graphics.count, VK_QUEUE_GRAPHICS_BIT);
