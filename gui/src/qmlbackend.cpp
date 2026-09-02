@@ -2,6 +2,7 @@
 #include "qmlsettings.h"
 #include "qmlmainwindow.h"
 #include "streamsession.h"
+#include "chiaki/time.h"
 #include "controllermanager.h"
 #include "psnaccountid.h"
 #include "psntoken.h"

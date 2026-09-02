@@ -2,6 +2,7 @@
 #include "qmlbackend.h"
 #include "qmlsvgprovider.h"
 #include "chiaki/log.h"
+#include "chiaki/time.h"
 #include "streamsession.h"
 
 #include <qpa/qplatformnativeinterface.h>
