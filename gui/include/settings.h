@@ -242,6 +242,12 @@ class Settings : public QObject
 		bool GetHideCursor() const				{ return settings.value("settings/hide_cursor", true).toBool(); }
 		void SetHideCursor(bool enabled)		{ settings.setValue("settings/hide_cursor", enabled); }
 
+		QString GetLanguage() const				{ return settings.value("settings/language", "auto").toString(); }
+		void SetLanguage(const QString &lang)	{ settings.setValue("settings/language", lang); }
+
+		double GetDebugBarOpacity() const		{ return settings.value("settings/debug_bar_opacity", 0.7).toDouble(); }
+		void SetDebugBarOpacity(double o)		{ settings.setValue("settings/debug_bar_opacity", o < 0.2 ? 0.2 : (o > 1.0 ? 1.0 : o)); }
+
 		RumbleHapticsIntensity GetRumbleHapticsIntensity() const;
 		void SetRumbleHapticsIntensity(RumbleHapticsIntensity intensity);
 

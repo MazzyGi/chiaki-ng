@@ -96,6 +96,13 @@ QmlMainWindow::QmlMainWindow(const StreamSessionConnectInfo &connect_info)
     init(connect_info.settings);
     backend->createSession(connect_info);
 
+    // target fps from the stream profile for the debug overlay
+    if (connect_info.video_profile.max_fps > 0 && target_fps != static_cast<int>(connect_info.video_profile.max_fps))
+    {
+        target_fps = static_cast<int>(connect_info.video_profile.max_fps);
+        emit targetFpsChanged();
+    }
+
     if (connect_info.zoom)
         setVideoMode(VideoMode::Zoom);
     else if (connect_info.stretch)
@@ -300,8 +307,59 @@ void QmlMainWindow::show()
     }
 }
 
+void QmlMainWindow::reportDecodeCostUs(qint64 cost_us)
+{
+    if (cost_us <= 0)
+        return;
+    const double new_ms = cost_us / 1000.0;
+    decode_latency_ms = decode_latency_ms > 0.0 ? decode_latency_ms * 0.8 + new_ms * 0.2 : new_ms;
+    emit decodeLatencyChanged();
+}
+
 void QmlMainWindow::presentFrame(AVFrame *frame, int32_t frames_lost)
 {
+    // track stream resolution for the debug overlay
+    if (frame && (frame->width != stream_width || frame->height != stream_height))
+    {
+        stream_width = frame->width;
+        stream_height = frame->height;
+        emit streamResolutionChanged();
+    }
+
+    // measure presentation fps over a rolling window
+    {
+        const qint64 now_us = static_cast<qint64>(chiaki_time_now_monotonic_us());
+        const qint64 last_us = last_present_us_for_fps.loadAcquire();
+        last_present_us_for_fps.storeRelease(now_us);
+        last_frame_presented_us.storeRelease(now_us);
+        if (last_us > 0 && now_us > last_us && now_us - last_us < 1000000)
+        {
+            const quint64 delta = static_cast<quint64>(now_us - last_us);
+            fps_frame_times[fps_frame_index] = delta;
+            fps_frame_index = (fps_frame_index + 1) % 64;
+            if (fps_frame_count < 64)
+                fps_frame_count++;
+            if (fps_frame_count >= 8)
+            {
+                quint64 total = 0;
+                for (int i = 0; i < fps_frame_count; i++)
+                    total += fps_frame_times[i];
+                const double avg_us = static_cast<double>(total) / fps_frame_count;
+                if (avg_us > 0)
+                {
+                    const double new_fps = 1000000.0 / avg_us;
+                    measured_fps = measured_fps > 0.0 ? measured_fps * 0.8 + new_fps * 0.2 : new_fps;
+                    emit measuredFpsChanged();
+                }
+            }
+        }
+        else
+        {
+            fps_frame_count = 0;
+            fps_frame_index = 0;
+        }
+    }
+
     frame_mutex.lock();
     if (av_frame) {
         qCDebug(chiakiGui) << "Dropping rendering frame";
@@ -341,6 +399,25 @@ AVBufferRef *QmlMainWindow::vulkanHwDeviceCtx()
     vkctx->nb_enabled_inst_extensions = placebo_vk_inst->num_extensions;
     vkctx->enabled_dev_extensions = placebo_vulkan->extensions;
     vkctx->nb_enabled_dev_extensions = placebo_vulkan->num_extensions;
+#if LIBAVUTIL_VERSION_MAJOR >= 60
+    // FFmpeg >= 8 (libavutil 60+): queue families are described via qf[]/nb_qf
+    int nb_qf = 0;
+    auto qf_add = [&](int idx, int num, VkQueueFlagBits flags) {
+        if (nb_qf >= 64)
+            return;
+        vkctx->qf[nb_qf].idx = idx;
+        vkctx->qf[nb_qf].num = num;
+        vkctx->qf[nb_qf].flags = flags;
+        vkctx->qf[nb_qf].video_caps = static_cast<VkVideoCodecOperationFlagBitsKHR>(0);
+        nb_qf++;
+    };
+    qf_add(placebo_vulkan->queue_graphics.index, placebo_vulkan->queue_graphics.count, VK_QUEUE_GRAPHICS_BIT);
+    qf_add(placebo_vulkan->queue_transfer.index, placebo_vulkan->queue_transfer.count, VK_QUEUE_TRANSFER_BIT);
+    qf_add(placebo_vulkan->queue_compute.index, placebo_vulkan->queue_compute.count, VK_QUEUE_COMPUTE_BIT);
+    qf_add(vk_decode_queue_index, 1, VK_QUEUE_VIDEO_DECODE_BIT_KHR);
+    vkctx->nb_qf = nb_qf;
+#else
+    // FFmpeg <= 7.x legacy fixed queue fields
     vkctx->queue_family_index = placebo_vulkan->queue_graphics.index;
     vkctx->nb_graphics_queues = placebo_vulkan->queue_graphics.count;
     vkctx->queue_family_tx_index = placebo_vulkan->queue_transfer.index;
@@ -349,6 +426,8 @@ AVBufferRef *QmlMainWindow::vulkanHwDeviceCtx()
     vkctx->nb_comp_queues = placebo_vulkan->queue_compute.count;
     vkctx->queue_family_decode_index = vk_decode_queue_index;
     vkctx->nb_decode_queues = 1;
+#endif
+#if !defined(FF_API_VULKAN_SYNC_QUEUES) || FF_API_VULKAN_SYNC_QUEUES
     vkctx->lock_queue = [](struct AVHWDeviceContext *dev_ctx, uint32_t queue_family, uint32_t index) {
         auto vk = reinterpret_cast<pl_vulkan>(dev_ctx->user_opaque);
         vk->lock_queue(vk, queue_family, index);
@@ -357,6 +436,7 @@ AVBufferRef *QmlMainWindow::vulkanHwDeviceCtx()
         auto vk = reinterpret_cast<pl_vulkan>(dev_ctx->user_opaque);
         vk->unlock_queue(vk, queue_family, index);
     };
+#endif
     if (av_hwdevice_ctx_init(vulkan_hw_dev_ctx) < 0) {
         qCWarning(chiakiGui) << "Failed to create Vulkan decode context";
         av_buffer_unref(&vulkan_hw_dev_ctx);
@@ -1060,6 +1140,21 @@ void QmlMainWindow::render()
 
     if (!pl_swapchain_submit_frame(placebo_swapchain))
         qCWarning(chiakiGui) << "Failed to submit Placebo frame!";
+
+    // expose frame-present -> submit/render latency for the debug overlay
+    {
+        const qint64 presented_us = last_frame_presented_us.loadAcquire();
+        if (presented_us > 0)
+        {
+            const qint64 now_us = static_cast<qint64>(chiaki_time_now_monotonic_us());
+            if (now_us > presented_us)
+            {
+                const double new_ms = (now_us - presented_us) / 1000.0;
+                render_latency_ms = render_latency_ms > 0.0 ? render_latency_ms * 0.8 + new_ms * 0.2 : new_ms;
+                emit renderLatencyChanged();
+            }
+        }
+    }
 
     pl_swapchain_swap_buffers(placebo_swapchain);
 }

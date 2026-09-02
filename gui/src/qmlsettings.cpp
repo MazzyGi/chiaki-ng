@@ -181,6 +181,28 @@ void QmlSettings::setLogVerbose(bool verbose)
     emit logVerboseChanged();
 }
 
+QString QmlSettings::language() const
+{
+    return settings->GetLanguage();
+}
+
+void QmlSettings::setLanguage(const QString &lang)
+{
+    settings->SetLanguage(lang);
+    emit languageChanged();
+}
+
+double QmlSettings::debugBarOpacity() const
+{
+    return settings->GetDebugBarOpacity();
+}
+
+void QmlSettings::setDebugBarOpacity(double opacity)
+{
+    settings->SetDebugBarOpacity(opacity);
+    emit debugBarOpacityChanged();
+}
+
 int QmlSettings::rumbleHapticsIntensity() const
 {
     return static_cast<int>(settings->GetRumbleHapticsIntensity());

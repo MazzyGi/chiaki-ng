@@ -192,6 +192,64 @@ Item {
         }
     }
 
+    // Single-line debug info bar at the top of the stream window
+    Rectangle {
+        id: debugInfoBar
+        anchors {
+            left: parent.left
+            top: parent.top
+            margins: 8
+        }
+        width: debugInfoLabel.implicitWidth + 20
+        height: debugInfoLabel.implicitHeight + 8
+        radius: 6
+        // opacity is user-adjustable via settings: 0.2 - 1.0
+        readonly property real barOpacity: Math.max(0.2, Math.min(1.0, Chiaki.settings.debugBarOpacity))
+        color: Qt.rgba(0, 0, 0, barOpacity * 0.85)
+        border.color: Qt.rgba(255, 255, 255, barOpacity * 0.25)
+        border.width: 1
+        visible: Chiaki.settings.showStreamStats && Chiaki.session
+
+        // mouse wheel over the bar adjusts its transparency
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.NoButton
+            onWheel: {
+                var step = (angleDelta.y > 0) ? 0.1 : -0.1;
+                var cur = Chiaki.settings.debugBarOpacity;
+                Chiaki.settings.debugBarOpacity = Math.max(0.2, Math.min(1.0, (isNaN(cur) ? 0.7 : cur) + step));
+            }
+        }
+
+        Label {
+            id: debugInfoLabel
+            anchors.centerIn: parent
+            font.pixelSize: 14
+            font.family: "Menlo"
+            color: Qt.rgba(0.88, 0.88, 0.88, debugInfoBar.barOpacity)
+            text: {
+                var fps = Chiaki.window.measuredFps ? Chiaki.window.measuredFps.toFixed(1) : "0.0";
+                var target = Chiaki.window.targetFps ? Chiaki.window.targetFps : 60;
+                var bitrate = (Chiaki.session && isFinite(Chiaki.session.measuredBitrate)) ? Chiaki.session.measuredBitrate.toFixed(1) : "0.0";
+                var w = Chiaki.window.streamWidth ? Chiaki.window.streamWidth : 0;
+                var h = Chiaki.window.streamHeight ? Chiaki.window.streamHeight : 0;
+                var loss = (Chiaki.session && isFinite(Chiaki.session.averagePacketLoss)) ? (Chiaki.session.averagePacketLoss * 100).toFixed(1) : "0.0";
+                var dec = Chiaki.window.decodeLatencyMs ? Chiaki.window.decodeLatencyMs.toFixed(1) : "0.0";
+                var ren = Chiaki.window.renderLatencyMs ? Chiaki.window.renderLatencyMs.toFixed(1) : "0.0";
+                var drop = Chiaki.window.droppedFrames ? Chiaki.window.droppedFrames : 0;
+                var total = (parseFloat(dec) + parseFloat(ren)).toFixed(1);
+                return qsTr("FPS %1/%2").arg(fps).arg(target)
+                    + qsTr("  Bitrate %1 Mbps").arg(bitrate)
+                    + qsTr("  Resolution %1×%2").arg(w).arg(h)
+                    + qsTr("  Packet Loss %1%").arg(loss)
+                    + qsTr("  Decode %1 ms").arg(dec)
+                    + qsTr("  Render %1 ms").arg(ren)
+                    + qsTr("  Total %1 ms").arg(total)
+                    + qsTr("  Dropped Frames %1").arg(drop);
+            }
+        }
+    }
+
     Item {
         id: streamStats
         anchors.fill: parent

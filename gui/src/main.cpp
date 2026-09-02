@@ -11,6 +11,9 @@ int main(int argc, char *argv[]) { return real_main(argc, argv); }
 #include <qmlmainwindow.h>
 #include <QApplication>
 #include <QtTypes>
+#if defined(Q_OS_MACOS)
+#include "macAwdlManager.h"
+#endif
 
 #ifdef CHIAKI_ENABLE_CLI
 #include <chiaki-cli.h>
@@ -30,6 +33,9 @@ int main(int argc, char *argv[]) { return real_main(argc, argv); }
 #include <QCommandLineParser>
 #include <QMap>
 #include <QSurfaceFormat>
+#include <QTranslator>
+#include <QLocale>
+#include <QFile>
 
 Q_DECLARE_METATYPE(ChiakiLogLevel)
 Q_DECLARE_METATYPE(ChiakiRegistEventType)
@@ -112,8 +118,49 @@ int real_main(int argc, char *argv[])
 #endif
 	QApplication app(argc, argv);
 
+	// Load translation: settings/language can be "auto" (system locale) or an
+	// explicit locale like "zh_CN" / "en". Loads from the app bundle on macOS
+	// or next to the executable elsewhere.
+	{
+		Settings lang_settings(QString());
+		QString locale = lang_settings.GetLanguage();
+		if (locale == "en")
+			locale.clear(); // default, no translation file
+		else if (locale == "auto" || locale.isEmpty())
+			locale = QLocale::system().name();
+		if (!locale.isEmpty())
+		{
+			QStringList candidates;
+#if defined(Q_OS_MACOS)
+			candidates << QCoreApplication::applicationDirPath() + "/../Resources/translations";
+#endif
+			candidates << QCoreApplication::applicationDirPath() + "/translations"
+				<< QCoreApplication::applicationDirPath();
+			QTranslator *translator = new QTranslator(&app);
+			QTranslator *qml_translator = new QTranslator(&app);
+			for (const QString &dir : qAsConst(candidates))
+			{
+				const QString path = dir + "/chiaki_ng_" + locale + ".qm";
+				if (QFile::exists(path) && translator->load(path))
+				{
+					QCoreApplication::installTranslator(translator);
+					if (qml_translator->load(path))
+						QCoreApplication::installTranslator(qml_translator);
+					break;
+				}
+			}
+		}
+	}
+
 #ifdef Q_OS_MACOS
 	QGuiApplication::setWindowIcon(QIcon(":/icons/chiaking_macos.svg"));
+	// AWDL (AirDrop/Handoff) makes the WiFi chip channel-hop periodically,
+	// causing burst packet loss during streams. Disable it while streaming
+	// and restore it on quit. Only prompts for admin when a change is needed.
+	mac_awdl_disable_on_start();
+	QObject::connect(&app, &QCoreApplication::aboutToQuit, &app, []() {
+		mac_awdl_restore_on_exit();
+	});
 #else
 	QGuiApplication::setWindowIcon(QIcon(":/icons/chiaking.svg"));
 #endif

@@ -45,6 +45,12 @@ class QmlMainWindow : public QWindow
     Q_PROPERTY(float ZoomFactor READ zoomFactor WRITE setZoomFactor NOTIFY zoomFactorChanged)
     Q_PROPERTY(VideoPreset videoPreset READ videoPreset WRITE setVideoPreset NOTIFY videoPresetChanged)
     Q_PROPERTY(bool directStream READ directStream NOTIFY directStreamChanged)
+    Q_PROPERTY(int targetFps READ targetFps NOTIFY targetFpsChanged)
+    Q_PROPERTY(double measuredFps READ measuredFps NOTIFY measuredFpsChanged)
+    Q_PROPERTY(int streamWidth READ streamWidth NOTIFY streamResolutionChanged)
+    Q_PROPERTY(int streamHeight READ streamHeight NOTIFY streamResolutionChanged)
+    Q_PROPERTY(double decodeLatencyMs READ decodeLatencyMs NOTIFY decodeLatencyChanged)
+    Q_PROPERTY(double renderLatencyMs READ renderLatencyMs NOTIFY renderLatencyChanged)
 
 public:
     enum class VideoMode {
@@ -72,6 +78,13 @@ public:
     int droppedFrames() const;
 
     bool directStream() const;
+    int targetFps() const { return target_fps; }
+    double measuredFps() const { return measured_fps; }
+    int streamWidth() const { return stream_width; }
+    int streamHeight() const { return stream_height; }
+    double decodeLatencyMs() const { return decode_latency_ms; }
+    double renderLatencyMs() const { return render_latency_ms; }
+    void reportDecodeCostUs(qint64 cost_us);
 
     bool keepVideo() const;
     void setKeepVideo(bool keep);
@@ -114,6 +127,11 @@ signals:
     void videoPresetChanged();
     void menuRequested();
     void directStreamChanged();
+    void targetFpsChanged();
+    void measuredFpsChanged();
+    void streamResolutionChanged();
+    void decodeLatencyChanged();
+    void renderLatencyChanged();
 
 private:
     void init(Settings *settings, bool exit_app_on_stream_exit = false);
@@ -146,6 +164,19 @@ private:
     float zoom_factor = 0;
     VideoPreset video_preset = VideoPreset::HighQuality;
     Settings *settings = {};
+
+    // debug stats overlay
+    int target_fps = 0;
+    double measured_fps = 0.0;
+    int stream_width = 0;
+    int stream_height = 0;
+    quint64 fps_frame_times[64] = {};
+    int fps_frame_count = 0;
+    int fps_frame_index = 0;
+    QAtomicInteger<qint64> last_present_us_for_fps = 0;
+    double decode_latency_ms = 0.0;
+    double render_latency_ms = 0.0;
+    QAtomicInteger<qint64> last_frame_presented_us = 0;
 
     QmlBackend *backend = {};
     StreamSession *session = {};

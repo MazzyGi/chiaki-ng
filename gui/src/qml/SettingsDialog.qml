@@ -417,10 +417,46 @@ DialogView {
                             text: qsTr("(Audio and Video Enabled)")
                         }
 
-                        Label {
-                            Layout.alignment: Qt.AlignRight
-                            text: qsTr("Log Directory:")
-                        }
+                         Label {
+                             Layout.alignment: Qt.AlignRight
+                             text: qsTr("Language:")
+                         }
+
+                         C.ComboBox {
+                             id: languageComboBox
+                             Layout.preferredWidth: 200
+                             model: [qsTr("Auto (System)"), "简体中文", "English"]
+                             property var values: ["auto", "zh_CN", "en"]
+                             property bool skipSync: false
+                             Component.onCompleted: {
+                                 var idx = values.indexOf(Chiaki.settings.language);
+                                 if (idx < 0) idx = 0;
+                                 skipSync = true;
+                                 currentIndex = idx;
+                                 skipSync = false;
+                             }
+                             onActivated: {
+                                 if (skipSync) return;
+                                 if (index >= 0 && index < values.length)
+                                     Chiaki.settings.language = values[index];
+                             }
+                             Label {
+                                 anchors {
+                                     left: parent.right
+                                     verticalCenter: parent.verticalCenter
+                                     leftMargin: 10
+                                 }
+                                 visible: languageComboBox.focus
+                                 color: "#ffab40"
+                                 text: qsTr("(restart required)")
+                                 font.pixelSize: 12
+                             }
+                         }
+
+                         Label {
+                             Layout.alignment: Qt.AlignRight
+                             text: qsTr("Log Directory:")
+                         }
 
                         Label {
                             Layout.maximumWidth: 600
@@ -1037,7 +1073,7 @@ DialogView {
                         }
                         Layout.preferredWidth: 200
                         from: 2
-                        to: 100
+                        to: 200
                         stepSize: 1
                         value: Chiaki.settings.bitrateLocalPS4 / 1000 ? (Chiaki.settings.bitrateLocalPS4 / 1000) : bitrate
                         onMoved: Chiaki.settings.bitrateLocalPS4 = value * 1000;
@@ -1069,7 +1105,7 @@ DialogView {
                         }
                         Layout.preferredWidth: 200
                         from: 2
-                        to: 100
+                        to: 200
                         stepSize: 1
                         value: Chiaki.settings.bitrateRemotePS4 / 1000 ? (Chiaki.settings.bitrateRemotePS4 / 1000) : bitrate
                         onMoved: Chiaki.settings.bitrateRemotePS4 = value * 1000;
@@ -1103,7 +1139,7 @@ DialogView {
                         }
                         Layout.preferredWidth: 200
                         from: 2
-                        to: 100
+                        to: 200
                         stepSize: 1
                         value: Chiaki.settings.bitrateLocalPS5 / 1000 ? (Chiaki.settings.bitrateLocalPS5 / 1000) : bitrate
                         onMoved: Chiaki.settings.bitrateLocalPS5 = value * 1000;
@@ -1121,6 +1157,21 @@ DialogView {
                         }
                     }
 
+                    C.TextField {
+                        visible: selectedConsole == SettingsDialog.Console.PS5
+                        Layout.preferredWidth: 110
+                        placeholderText: qsTr("Mbps")
+                        text: (Chiaki.settings.bitrateLocalPS5 / 1000).toFixed(0)
+                        onAccepted: {
+                            var v = parseInt(text);
+                            if (!isNaN(v) && v >= 2 && v <= 500)
+                                Chiaki.settings.bitrateLocalPS5 = v * 1000;
+                            else
+                                text = (Chiaki.settings.bitrateLocalPS5 / 1000).toFixed(0);
+                        }
+                        onActiveFocusChanged: if (!activeFocus) text = (Chiaki.settings.bitrateLocalPS5 / 1000).toFixed(0)
+                    }
+
                     C.Slider {
                         id: bitrateRemotePS5
                         visible: selectedConsole == SettingsDialog.Console.PS5
@@ -1136,7 +1187,7 @@ DialogView {
                         }
                         Layout.preferredWidth: 200
                         from: 2
-                        to: 100
+                        to: 200
                         stepSize: 1
                         value: Chiaki.settings.bitrateRemotePS5 / 1000 ? (Chiaki.settings.bitrateRemotePS5 / 1000) : bitrate
                         onMoved: Chiaki.settings.bitrateRemotePS5 = value * 1000;
@@ -1153,6 +1204,21 @@ DialogView {
                             }
                             text: (parent.value) + qsTr(" Mbps") + qsTr(" (%1 Mbps)").arg(parent.bitrate.toFixed(0))
                         }
+                    }
+
+                    C.TextField {
+                        visible: selectedConsole == SettingsDialog.Console.PS5
+                        Layout.preferredWidth: 110
+                        placeholderText: qsTr("Mbps")
+                        text: (Chiaki.settings.bitrateRemotePS5 / 1000).toFixed(0)
+                        onAccepted: {
+                            var v = parseInt(text);
+                            if (!isNaN(v) && v >= 2 && v <= 500)
+                                Chiaki.settings.bitrateRemotePS5 = v * 1000;
+                            else
+                                text = (Chiaki.settings.bitrateRemotePS5 / 1000).toFixed(0);
+                        }
+                        onActiveFocusChanged: if (!activeFocus) text = (Chiaki.settings.bitrateRemotePS5 / 1000).toFixed(0)
                     }
 
                     Label {
@@ -1615,7 +1681,7 @@ DialogView {
                     clip: true
                     model: Chiaki.settings.registeredHosts
                     delegate: ItemDelegate {
-                        text: "%1 (%2, %3)".arg(Chiaki.settings.streamerMode ? "hidden" : modelData.mac).arg(modelData.ps5 ? "PS5" : "PS4").arg(modelData.name)
+                        text: "%1 (%2, %3)".arg(Chiaki.settings.streamerMode ? qsTr("hidden") : modelData.mac).arg(modelData.ps5 ? "PS5" : "PS4").arg(modelData.name)
                         height: 80
                         width: parent ? parent.width : 0
                         leftPadding: autoConnectButton.width + 40
@@ -1811,7 +1877,7 @@ DialogView {
                     }
                     model: Chiaki.hiddenHosts
                     delegate: ItemDelegate {
-                        text: "%1 (%2)".arg(Chiaki.settings.streamerMode ? "hidden" : modelData.mac).arg(modelData.name)
+                        text: "%1 (%2)".arg(Chiaki.settings.streamerMode ? qsTr("hidden") : modelData.mac).arg(modelData.name)
                         height: 80
                         width: parent ? parent.width : 0
 
@@ -1886,7 +1952,7 @@ DialogView {
                     columnSpacing: 10
 
                     Button {
-                        text: "Reset All Keys"
+                        text: qsTr("Reset All Keys")
                         Layout.alignment: Qt.AlignRight
                         property bool firstInFocusChain: true
                         property bool lastInFocusChain: false
@@ -2192,7 +2258,7 @@ DialogView {
                             Layout.alignment: Qt.AlignHCenter
                             id: controllerMappingChange
                             firstInFocusChain: true
-                            text: "Change Controller Mapping"
+                            text: qsTr("Change Controller Mapping")
                             onClicked: controllerMappingDialog.show({
                                 reset: false
                             });
@@ -2201,7 +2267,7 @@ DialogView {
                             sendOutput: true
                             Layout.alignment: Qt.AlignHCenter
                             id: controllerMappingReset
-                            text: "Reset Controller Mapping"
+                            text: qsTr("Reset Controller Mapping")
                             onClicked: controllerMappingDialog.show({
                                 reset: true
                             });

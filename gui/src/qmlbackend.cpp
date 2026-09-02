@@ -25,6 +25,7 @@
 #include <QUrlQuery>
 #include <QtGlobal>
 #include <QGuiApplication>
+#include <QScreen>
 #include <QPixmap>
 #include <QImageReader>
 #include <QProcessEnvironment>
@@ -759,6 +760,7 @@ void QmlBackend::createSession(const StreamSessionConnectInfo &connect_info)
             return;
         }
         int32_t frames_lost;
+        const qint64 decode_begin_us = static_cast<qint64>(chiaki_time_now_monotonic_us());
         AVFrame *frame = chiaki_ffmpeg_decoder_pull_frame(decoder, &frames_lost);
         if (!frame)
             return;
@@ -781,6 +783,9 @@ void QmlBackend::createSession(const StreamSessionConnectInfo &connect_info)
             av_frame_unref(frame);
             frame = sw_frame;
         }
+        // decode + hw transfer time (frame thread), reported to the debug overlay
+        const qint64 decode_cost_us = static_cast<qint64>(chiaki_time_now_monotonic_us()) - decode_begin_us;
+        window->reportDecodeCostUs(decode_cost_us);
         QMetaObject::invokeMethod(window, std::bind(&QmlMainWindow::presentFrame, window, frame, frames_lost));
     });
 
@@ -839,19 +844,52 @@ void QmlBackend::createSession(const StreamSessionConnectInfo &connect_info)
 
     if (window->windowState() != Qt::WindowFullScreen)
     {
+        // Clamp the stream window to the visible screen area so it never
+        // opens larger than the desktop (e.g. 1920x1080 on a 1512x982 MacBook)
+        const auto clampToScreen = [this](int width, int height) -> QSize {
+            QScreen *screen = window->screen();
+            if (!screen)
+                screen = QGuiApplication::primaryScreen();
+            if (!screen || width <= 0 || height <= 0)
+                return QSize(width, height);
+            const QRect available = screen->availableGeometry();
+            const int w = qMin(width, available.width());
+            const int h = qMin(height, available.height());
+            if (w < width || h < height)
+            {
+                const qreal scale = qMin(static_cast<qreal>(w) / width, static_cast<qreal>(h) / height);
+                return QSize(qRound(width * scale), qRound(height * scale));
+            }
+            return QSize(w, h);
+        };
+
         if(settings->GetWindowType() == WindowType::CustomResolution)
         {
-            window->resize(settings->GetCustomResolutionWidth(), settings->GetCustomResolutionHeight());
-            window->setMaximumSize(QSize(settings->GetCustomResolutionWidth(), settings->GetCustomResolutionHeight()));
+            const QSize clamped = clampToScreen(settings->GetCustomResolutionWidth(), settings->GetCustomResolutionHeight());
+            window->resize(clamped);
+            window->setMaximumSize(clamped);
         }
         else if(settings->GetWindowType() == WindowType::AdjustableResolution)
         {
             window->normalTime();
             if(!settings->GetStreamGeometry().isEmpty())
-                window->setGeometry(settings->GetStreamGeometry());
+            {
+                QRect geo = settings->GetStreamGeometry();
+                QScreen *screen = window->screen();
+                if (!screen)
+                    screen = QGuiApplication::primaryScreen();
+                if (screen)
+                {
+                    const QRect available = screen->availableGeometry();
+                    geo = geo.intersected(QRect(available.topLeft(), geo.size()));
+                    if (geo.width() > available.width() || geo.height() > available.height())
+                        geo.setSize(geo.size().boundedTo(available.size()));
+                }
+                window->setGeometry(geo);
+            }
         }
         else
-            window->resize(connect_info.video_profile.width, connect_info.video_profile.height);
+            window->resize(clampToScreen(connect_info.video_profile.width, connect_info.video_profile.height));
     }
 
     chiaki_log_mutex.lock();
