@@ -122,8 +122,10 @@ jobs:
             RC=$?
             echo "process died rc=$RC"
             head -30 /tmp/smoke.log
-            if grep -qiE "dyld|Library not loaded|image not found" /tmp/smoke.log; then
-              echo "FATAL: dylib load failure"
+            DYLD_ERR=$(grep -iE "dyld\[|Library not loaded|image not found|Symbol not found" /tmp/smoke.log | head -3)
+            if [ -n "$DYLD_ERR" ]; then
+              echo "FATAL: dylib load failure:"
+              echo "$DYLD_ERR"
               exit 1
             fi
             echo "no dyld errors -> libraries resolved (GUI abort on headless runner is expected)"
