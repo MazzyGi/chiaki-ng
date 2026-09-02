@@ -101,7 +101,7 @@ Pane {
                 Layout.fillHeight: true
                 Layout.preferredWidth: 350
                 flat: true
-                text: "Create Steam Shortcut"
+                text: qsTr("Create Steam Shortcut")
                 focusPolicy: Qt.NoFocus
                 onClicked: root.showSteamShortcutDialog(false)
                 Material.roundedScale: Material.SmallScale
@@ -123,7 +123,7 @@ Pane {
                 Layout.fillHeight: true
                 Layout.preferredWidth: 400
                 flat: true
-                text: "Refresh PSN Hosts"
+                text: qsTr("Refresh PSN Hosts")
                 icon.source: "qrc:/icons/r1.svg"
                 focusPolicy: Qt.NoFocus
                 onClicked: Chiaki.refreshPsnToken();
@@ -144,7 +144,7 @@ Pane {
                 Layout.fillHeight: true
                 Layout.preferredWidth: 300
                 flat: true
-                text: "Add Manual Host"
+                text: qsTr("Add Manual Host")
                 focusPolicy: Qt.NoFocus
                 onClicked: root.showManualHostDialog()
                 Material.roundedScale: Material.SmallScale

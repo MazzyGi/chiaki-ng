@@ -260,7 +260,7 @@
     </message>
     <message>
         <source>(1000)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -420,6 +420,18 @@ This enables:
         <source>Update Console Pin</source>
         <translation>更新主机 PIN</translation>
     </message>
+    <message>
+        <source>Create Steam Shortcut</source>
+        <translation>创建 Steam 快捷方式</translation>
+    </message>
+    <message>
+        <source>Refresh PSN Hosts</source>
+        <translation>刷新 PSN 主机</translation>
+    </message>
+    <message>
+        <source>Add Manual Host</source>
+        <translation>手动添加主机</translation>
+    </message>
 </context>
 <context>
     <name>ManualHostDialog</name>
@@ -490,6 +502,30 @@ This enables:
         <source>Error: %1!</source>
         <translation>错误：%1！</translation>
     </message>
+    <message>
+        <source>reload + clear cookies</source>
+        <translation>重新加载并清除 Cookie</translation>
+    </message>
+    <message>
+        <source>Retrieving PSN account ID failed with error: </source>
+        <translation>获取 PSN 账户 ID 失败，错误：</translation>
+    </message>
+    <message>
+        <source>Use external browser</source>
+        <translation>使用外部浏览器</translation>
+    </message>
+    <message>
+        <source>Retry process</source>
+        <translation>重试整个过程</translation>
+    </message>
+    <message>
+        <source>Retry</source>
+        <translation>重试</translation>
+    </message>
+    <message>
+        <source>Retrieving PSN account ID failed with error</source>
+        <translation>获取 PSN 账户 ID 失败，错误</translation>
+    </message>
 </context>
 <context>
     <name>PSNTokenDialog</name>
@@ -524,6 +560,26 @@ This enables:
     <message>
         <source>Create PSN Automatic Remote Connection Token</source>
         <translation>创建 PSN 自动远程连接令牌</translation>
+    </message>
+    <message>
+        <source>reload + clear cookies</source>
+        <translation>重新加载并清除 Cookie</translation>
+    </message>
+    <message>
+        <source>Retrieving PSN account ID failed with error: </source>
+        <translation>获取 PSN 账户 ID 失败，错误：</translation>
+    </message>
+    <message>
+        <source>Use external browser</source>
+        <translation>使用外部浏览器</translation>
+    </message>
+    <message>
+        <source>Retry process</source>
+        <translation>重试整个过程</translation>
+    </message>
+    <message>
+        <source>Retry</source>
+        <translation>重试</translation>
     </message>
 </context>
 <context>
@@ -610,7 +666,7 @@ This enables:
     </message>
     <message>
         <source>(0.30)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Perceptual Strength:</source>
@@ -618,7 +674,7 @@ This enables:
     </message>
     <message>
         <source>(0.80)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Colorimetric Gamma:</source>
@@ -626,7 +682,7 @@ This enables:
     </message>
     <message>
         <source>(1.80)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Soft Clip Knee:</source>
@@ -634,7 +690,7 @@ This enables:
     </message>
     <message>
         <source>(0.70)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Soft Clip Desaturation:</source>
@@ -642,7 +698,7 @@ This enables:
     </message>
     <message>
         <source>(0.35)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>LUT 3D Size I:</source>
@@ -654,7 +710,7 @@ This enables:
     </message>
     <message>
         <source>(48)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>LUT 3D Size C:</source>
@@ -662,7 +718,7 @@ This enables:
     </message>
     <message>
         <source>(32)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>LUT 3D Size h:</source>
@@ -670,7 +726,7 @@ This enables:
     </message>
     <message>
         <source>(256)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>LUT 3D Tricubic Enabled:</source>
@@ -746,7 +802,7 @@ This enables:
     </message>
     <message>
         <source>(0.40)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Knee Minimum:</source>
@@ -754,7 +810,7 @@ This enables:
     </message>
     <message>
         <source>(0.10)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Knee Maximum:</source>
@@ -770,7 +826,7 @@ This enables:
     </message>
     <message>
         <source>(1.00)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Slope Tuning:</source>
@@ -778,7 +834,7 @@ This enables:
     </message>
     <message>
         <source>(1.5)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Slope Offset:</source>
@@ -786,7 +842,7 @@ This enables:
     </message>
     <message>
         <source>(0.20)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Spline Contrast:</source>
@@ -794,7 +850,7 @@ This enables:
     </message>
     <message>
         <source>(0.50)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Reinhard Contrast:</source>
@@ -806,7 +862,7 @@ This enables:
     </message>
     <message>
         <source>(0.3)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Exposure:</source>
@@ -814,7 +870,7 @@ This enables:
     </message>
     <message>
         <source>(1.0)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Inverse Tone-mapping Enabled:</source>
@@ -866,7 +922,7 @@ This enables:
     </message>
     <message>
         <source>(3.5)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1057,7 +1113,7 @@ This enables:
     </message>
     <message>
         <source>(0.00)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Enable Deinterlace:</source>
@@ -1145,7 +1201,7 @@ This enables:
     </message>
     <message>
         <source>(3.0)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Deband Radius:</source>
@@ -1153,7 +1209,7 @@ This enables:
     </message>
     <message>
         <source>(16.0)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Deband Grain:</source>
@@ -1161,7 +1217,7 @@ This enables:
     </message>
     <message>
         <source>(4.0)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Sigmoidization Enabled:</source>
@@ -1181,7 +1237,7 @@ This enables:
     </message>
     <message>
         <source>(0.75)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Sigmoid Slope:</source>
@@ -1189,7 +1245,7 @@ This enables:
     </message>
     <message>
         <source>(6.5)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Color Adjustment Enabled:</source>
@@ -1217,7 +1273,7 @@ This enables:
     </message>
     <message>
         <source>(1.0)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Saturation:</source>
@@ -1237,7 +1293,7 @@ This enables:
     </message>
     <message>
         <source>(0.000)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>HDR Peak Detection Enabled:</source>
@@ -1265,7 +1321,7 @@ This enables:
     </message>
     <message>
         <source>(20.0)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Scene Threshold Low:</source>
@@ -1281,7 +1337,7 @@ This enables:
     </message>
     <message>
         <source>(99.995)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Black Cutoff:</source>
@@ -1407,6 +1463,137 @@ This enables:
     </message>
 </context>
 <context>
+    <name>QmlBackend</name>
+    <message>
+        <source>Remote Play session</source>
+        <translation type="vanished">远程游玩会话</translation>
+    </message>
+    <message>
+        <source>PS4 Console Unregistered</source>
+        <translation type="vanished">PS4 主机未注册</translation>
+    </message>
+    <message>
+        <source>Can't proceed...please register your PS4 console locally</source>
+        <translation type="vanished">无法继续…请先在本地注册你的 PS4 主机</translation>
+    </message>
+    <message>
+        <source>Stream failed</source>
+        <translation type="vanished">串流失败</translation>
+    </message>
+    <message>
+        <source>Failed to start Stream Session: %1</source>
+        <translation type="vanished">启动串流会话失败：%1</translation>
+    </message>
+    <message>
+        <source>Failed to initialize Stream Session: %1</source>
+        <translation type="vanished">初始化串流会话失败：%1</translation>
+    </message>
+    <message>
+        <source>Chiaki Session has quit</source>
+        <translation type="vanished">Chiaki 会话已退出</translation>
+    </message>
+    <message>
+        <source>Reason</source>
+        <translation type="vanished">原因</translation>
+    </message>
+    <message>
+        <source>Session has quit</source>
+        <translation type="vanished">会话已退出</translation>
+    </message>
+    <message>
+        <source>Invalid Account-ID</source>
+        <translation type="vanished">无效的账户 ID</translation>
+    </message>
+    <message>
+        <source>The PSN Account-ID must be exactly %1 bytes encoded as base64.</source>
+        <translation type="vanished">PSN 账户 ID 必须是 %1 字节的 base64 编码。</translation>
+    </message>
+    <message>
+        <source>PS4 Console Not Main</source>
+        <translation type="vanished">PS4 主机不是主机位</translation>
+    </message>
+    <message>
+        <source>Can't proceed...%1 is not your main PS4 console in PSN</source>
+        <translation type="vanished">无法继续…%1 不是你在 PSN 上的主 PS4 主机</translation>
+    </message>
+    <message>
+        <source>Wakeup failed</source>
+        <translation type="vanished">唤醒失败</translation>
+    </message>
+    <message>
+        <source>Failed to send Wakeup packet:
+%1</source>
+        <translation type="vanished">发送唤醒包失败：
+%1</translation>
+    </message>
+</context>
+<context>
+    <name>QmlMainWindow</name>
+    <message>
+        <source>Vulkan renderer stalled</source>
+        <translation type="vanished">Vulkan 渲染器停滞</translation>
+    </message>
+    <message>
+        <source>The Vulkan surface could not recover. Chiaki-ng will relaunch with OpenGL for this run only.</source>
+        <translation type="vanished">Vulkan surface 无法恢复。chiaki-ng 本次将以 OpenGL 重启。</translation>
+    </message>
+    <message>
+        <source>Vulkan surface creation failed repeatedly while the window was visible. OpenGL is being used for this launch only.</source>
+        <translation type="vanished">窗口可见时 Vulkan surface 创建反复失败。本次启动改用 OpenGL。</translation>
+    </message>
+    <message>
+        <source>Vulkan device lost</source>
+        <translation type="vanished">Vulkan 设备丢失</translation>
+    </message>
+    <message>
+        <source>The Vulkan renderer stopped responding. Chiaki-ng will relaunch with OpenGL for this run only.
+
+Reason: %1</source>
+        <translation type="vanished">Vulkan 渲染器停止响应。chiaki-ng 本次将以 OpenGL 重启。
+
+原因：%1</translation>
+    </message>
+    <message>
+        <source>Vulkan device was lost. OpenGL is being used for this launch only. Reason: %1</source>
+        <translation type="vanished">Vulkan 设备丢失。本次启动改用 OpenGL。原因：%1</translation>
+    </message>
+    <message>
+        <source>The Vulkan swapchain could not recover. Chiaki-ng will relaunch with OpenGL for this run only.</source>
+        <translation type="vanished">Vulkan 交换链无法恢复。chiaki-ng 本次将以 OpenGL 重启。</translation>
+    </message>
+    <message>
+        <source>Vulkan swapchain failed repeatedly while the window was visible. OpenGL is being used for this launch only.</source>
+        <translation type="vanished">窗口可见时 Vulkan 交换链反复失败。本次启动改用 OpenGL。</translation>
+    </message>
+</context>
+<context>
+    <name>QmlSettings</name>
+    <message>
+        <source>Export %1 Profile To File</source>
+        <translation type="vanished">导出 %1 配置到文件</translation>
+    </message>
+    <message>
+        <source>Settings files (*.ini)</source>
+        <translation type="vanished">设置文件 (*.ini)</translation>
+    </message>
+    <message>
+        <source>Import Profile From File</source>
+        <translation type="vanished">从文件导入配置</translation>
+    </message>
+    <message>
+        <source>Choose Steam Base Path</source>
+        <translation type="vanished">选择 Steam 目录</translation>
+    </message>
+    <message>
+        <source>Export Placebo Renderer Settings To File</source>
+        <translation type="vanished">导出 Placebo 渲染器设置到文件</translation>
+    </message>
+    <message>
+        <source>Import Placebo Renderer Settings From File</source>
+        <translation type="vanished">从文件导入 Placebo 渲染器设置</translation>
+    </message>
+</context>
+<context>
     <name>RegistDialog</name>
     <message>
         <source>Register Console</source>
@@ -1504,6 +1691,133 @@ This enables:
     <message>
         <source>Remind Me Later</source>
         <translation>稍后提醒</translation>
+    </message>
+</context>
+<context>
+    <name>Settings</name>
+    <message>
+        <source>Cross</source>
+        <translation type="vanished">叉键</translation>
+    </message>
+    <message>
+        <source>Moon</source>
+        <translation type="vanished">Moon</translation>
+    </message>
+    <message>
+        <source>Box</source>
+        <translation type="vanished">方框</translation>
+    </message>
+    <message>
+        <source>Pyramid</source>
+        <translation type="vanished">金字塔</translation>
+    </message>
+    <message>
+        <source>L1</source>
+        <translation type="vanished">L1</translation>
+    </message>
+    <message>
+        <source>R1</source>
+        <translation type="vanished">R1</translation>
+    </message>
+    <message>
+        <source>L3</source>
+        <translation type="vanished">L3</translation>
+    </message>
+    <message>
+        <source>R3</source>
+        <translation type="vanished">R3</translation>
+    </message>
+    <message>
+        <source>Options</source>
+        <translation type="vanished">选项</translation>
+    </message>
+    <message>
+        <source>Share</source>
+        <translation type="vanished">分享</translation>
+    </message>
+    <message>
+        <source>Touchpad</source>
+        <translation type="vanished">触摸板</translation>
+    </message>
+    <message>
+        <source>PS</source>
+        <translation type="vanished">PS</translation>
+    </message>
+    <message>
+        <source>L2</source>
+        <translation type="vanished">L2</translation>
+    </message>
+    <message>
+        <source>R2</source>
+        <translation type="vanished">R2</translation>
+    </message>
+    <message>
+        <source>D-Pad Left</source>
+        <translation type="vanished">十字键 左</translation>
+    </message>
+    <message>
+        <source>D-Pad Right</source>
+        <translation type="vanished">十字键 右</translation>
+    </message>
+    <message>
+        <source>D-Pad Up</source>
+        <translation type="vanished">十字键 上</translation>
+    </message>
+    <message>
+        <source>D-Pad Down</source>
+        <translation type="vanished">十字键 下</translation>
+    </message>
+    <message>
+        <source>Left Stick Right</source>
+        <translation type="vanished">左摇杆 右</translation>
+    </message>
+    <message>
+        <source>Left Stick Up</source>
+        <translation type="vanished">左摇杆 上</translation>
+    </message>
+    <message>
+        <source>Right Stick Right</source>
+        <translation type="vanished">右摇杆 右</translation>
+    </message>
+    <message>
+        <source>Right Stick Up</source>
+        <translation type="vanished">右摇杆 上</translation>
+    </message>
+    <message>
+        <source>Left Stick Left</source>
+        <translation type="vanished">左摇杆 左</translation>
+    </message>
+    <message>
+        <source>Left Stick Down</source>
+        <translation type="vanished">左摇杆 下</translation>
+    </message>
+    <message>
+        <source>Right Stick Left</source>
+        <translation type="vanished">右摇杆 左</translation>
+    </message>
+    <message>
+        <source>Right Stick Down</source>
+        <translation type="vanished">右摇杆 下</translation>
+    </message>
+    <message>
+        <source>Left Stick X</source>
+        <translation type="vanished">左摇杆 X 轴</translation>
+    </message>
+    <message>
+        <source>Left Stick Y</source>
+        <translation type="vanished">左摇杆 Y 轴</translation>
+    </message>
+    <message>
+        <source>Right Stick X</source>
+        <translation type="vanished">右摇杆 X 轴</translation>
+    </message>
+    <message>
+        <source>Right Stick Y</source>
+        <translation type="vanished">右摇杆 Y 轴</translation>
+    </message>
+    <message>
+        <source>MIC</source>
+        <translation type="vanished">麦克风</translation>
     </message>
 </context>
 <context>
@@ -2234,7 +2548,7 @@ This enables:
     </message>
     <message>
         <source>(75)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Port Guess Socket Count:</source>
@@ -2246,7 +2560,7 @@ This enables:
     </message>
     <message>
         <source>(250)</source>
-        <translation type="unfinished" />
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Current Profile: </source>
@@ -2305,6 +2619,57 @@ This enables:
 Please use Steam to map controller or disable Steam Input for the controller before mapping here.</source>
         <translation>该控制器由 Steam 管理。
 请使用 Steam 映射控制器，或先为该控制器禁用 Steam Input，再在此处映射。</translation>
+    </message>
+    <message>
+        <source>Custom Mbps</source>
+        <translation>自定义 Mbps</translation>
+    </message>
+    <message>
+        <source>hidden</source>
+        <translation>已隐藏</translation>
+    </message>
+    <message>
+        <source>Reset All Keys</source>
+        <translation>重置所有按键</translation>
+    </message>
+    <message>
+        <source>Change Controller Mapping</source>
+        <translation>更改控制器映射</translation>
+    </message>
+    <message>
+        <source>Reset Controller Mapping</source>
+        <translation>重置控制器映射</translation>
+    </message>
+</context>
+<context>
+    <name>StatsOverlayWidget</name>
+    <message>
+        <source>queue depth avg</source>
+        <translation type="vanished">平均队列深度</translation>
+    </message>
+    <message>
+        <source>pending frame age</source>
+        <translation type="vanished">待处理帧年龄</translation>
+    </message>
+    <message>
+        <source>packet loss</source>
+        <translation type="vanished">丢包</translation>
+    </message>
+    <message>
+        <source>dropped frames</source>
+        <translation type="vanished">丢帧</translation>
+    </message>
+    <message>
+        <source>lost frames</source>
+        <translation type="vanished">丢失帧</translation>
+    </message>
+    <message>
+        <source>%1 ms</source>
+        <translation type="vanished">%1 毫秒</translation>
+    </message>
+    <message>
+        <source>Mbps</source>
+        <translation type="vanished">Mbps</translation>
     </message>
 </context>
 <context>
@@ -2370,6 +2735,12 @@ This enables:
     <message>
         <source>Please Restart Steam</source>
         <translation>请重启 Steam</translation>
+    </message>
+    <message>
+        <source>In order for %1 to appear in Steam,
+Steam must be restarted!</source>
+        <translation>为了让 %1 出现在 Steam 中，
+必须重启 Steam！</translation>
     </message>
 </context>
 <context>
@@ -2441,6 +2812,17 @@ This enables:
     <message>
         <source>dropped frames</source>
         <translation>丢帧</translation>
+    </message>
+</context>
+<context>
+    <name>StreamSession</name>
+    <message>
+        <source>Invalid Account-ID</source>
+        <translation type="vanished">无效的账户 ID</translation>
+    </message>
+    <message>
+        <source>The PSN Account-ID must be exactly %1 bytes encoded as base64.</source>
+        <translation type="vanished">PSN 账户 ID 必须是 %1 字节的 base64 编码。</translation>
     </message>
 </context>
 <context>
@@ -2598,6 +2980,38 @@ To re-enable change Audio/Video to Audio and Video Enabled in the General tab of
     <message>
         <source>OK</source>
         <translation>确定</translation>
+    </message>
+    <message>
+        <source>FPS %1/%2</source>
+        <translation>帧率 %1/%2</translation>
+    </message>
+    <message>
+        <source>  Bitrate %1 Mbps</source>
+        <translation>  码率 %1 Mbps</translation>
+    </message>
+    <message>
+        <source>  Resolution %1×%2</source>
+        <translation>  分辨率 %1×%2</translation>
+    </message>
+    <message>
+        <source>  Packet Loss %1%</source>
+        <translation>  丢包 %1%</translation>
+    </message>
+    <message>
+        <source>  Decode %1 ms</source>
+        <translation>  解码 %1 ms</translation>
+    </message>
+    <message>
+        <source>  Render %1 ms</source>
+        <translation>  渲染 %1 ms</translation>
+    </message>
+    <message>
+        <source>  Dropped Frames %1</source>
+        <translation>  丢帧 %1</translation>
+    </message>
+    <message>
+        <source>  Total Latency %1 ms</source>
+        <translation>  总延迟 %1 ms</translation>
     </message>
 </context>
 </TS>

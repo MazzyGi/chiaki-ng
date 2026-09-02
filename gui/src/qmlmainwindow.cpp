@@ -2975,6 +2975,51 @@ void QmlMainWindow::presentFrame(ChiakiFfmpegFrame frame, int32_t frames_lost, q
                 << "[decode] gui_handoff_outlier_us=" << gui_handoff_us
                 << " pts=" << frame.pts;
         }
+        // expose decode -> GUI handoff latency for the debug overlay
+        const double new_decode_ms = gui_handoff_us / 1000.0;
+        decode_latency_ms = decode_latency_ms > 0.0 ? decode_latency_ms * 0.9 + new_decode_ms * 0.1 : new_decode_ms;
+        emit decodeLatencyChanged();
+        last_decoder_delivery_us.storeRelease(decoder_delivery_us);
+    }
+
+    // expose stream resolution for the debug overlay
+    if (frame.frame && (frame.frame->width != stream_width || frame.frame->height != stream_height))
+    {
+        stream_width = frame.frame->width;
+        stream_height = frame.frame->height;
+        emit streamResolutionChanged();
+    }
+
+    // measure presentation fps over a rolling window
+    {
+        const qint64 last_us = last_present_us_for_fps.loadAcquire();
+        last_present_us_for_fps.storeRelease(present_entry_us);
+        if (last_us > 0 && present_entry_us > last_us && present_entry_us - last_us < 1000000)
+        {
+            const quint64 delta = static_cast<quint64>(present_entry_us - last_us);
+            fps_frame_times[fps_frame_index] = delta;
+            fps_frame_index = (fps_frame_index + 1) % 64;
+            if (fps_frame_count < 64)
+                fps_frame_count++;
+            if (fps_frame_count >= 8)
+            {
+                quint64 total = 0;
+                for (int i = 0; i < fps_frame_count; i++)
+                    total += fps_frame_times[i];
+                const double avg_us = static_cast<double>(total) / fps_frame_count;
+                if (avg_us > 0)
+                {
+                    const double new_fps = 1000000.0 / avg_us;
+                    measured_fps = measured_fps > 0.0 ? measured_fps * 0.8 + new_fps * 0.2 : new_fps;
+                    emit measuredFpsChanged();
+                }
+            }
+        }
+        else if (last_us <= 0 || present_entry_us - last_us >= 1000000)
+        {
+            fps_frame_count = 0;
+            fps_frame_index = 0;
+        }
     }
 
     dropped_frames_current.fetchAndAddRelaxed(frames_lost);
@@ -3364,6 +3409,11 @@ void QmlMainWindow::setStreamMaxFPS(unsigned int max_fps)
     const double interval_ms = max_fps > 0 ? 1000.0 / max_fps : 16.6667;
     stream_configured_frame_interval_ms = interval_ms;
     source_frame_interval_ms = interval_ms;
+    if (target_fps != static_cast<int>(max_fps))
+    {
+        target_fps = static_cast<int>(max_fps);
+        emit targetFpsChanged();
+    }
 }
 
 void QmlMainWindow::resetPlaceboQueue()
@@ -7030,6 +7080,14 @@ void QmlMainWindow::render()
             }
             if (present && !async_present_completion) {
                 this->last_present_complete_us.storeRelease(present_complete_us);
+                // expose render -> present latency for the debug overlay
+                const qint64 render_entry_us_dbg = last_render_entry_us.loadAcquire();
+                if (render_entry_us_dbg > 0 && present_complete_us > render_entry_us_dbg)
+                {
+                    const double new_render_ms = (present_complete_us - render_entry_us_dbg) / 1000.0;
+                    render_latency_ms = render_latency_ms > 0.0 ? render_latency_ms * 0.9 + new_render_ms * 0.1 : new_render_ms;
+                    emit renderLatencyChanged();
+                }
                 if (startup_video_visible_pending.loadAcquire() != 0) {
                     const quint64 startup_visibility_generation = startup_video_visible_generation.loadAcquire();
                     QMetaObject::invokeMethod(this, [this, startup_visibility_generation]() {

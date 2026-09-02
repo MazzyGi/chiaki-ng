@@ -303,6 +303,52 @@ Item {
         }
     }
 
+    // Single-line debug info bar at the top of the stream window
+    Rectangle {
+        id: debugInfoBar
+        anchors {
+            left: parent.left
+            top: parent.top
+            margins: 8
+        }
+        width: debugInfoLabel.implicitWidth + 20
+        height: debugInfoLabel.implicitHeight + 8
+        radius: 6
+        color: "#b3000000"
+        visible: streamStatsVisible && Chiaki.session
+
+        Label {
+            id: debugInfoLabel
+            anchors.centerIn: parent
+            font.pixelSize: 14
+            font.family: "Menlo"
+            color: "#e0e0e0"
+            text: {
+                var fps = Chiaki.window.measuredFps ? Chiaki.window.measuredFps.toFixed(1) : "0.0";
+                var target = Chiaki.window.targetFps ? Chiaki.window.targetFps : 60;
+                var bitrate = (Chiaki.session && isFinite(Chiaki.session.measuredBitrate)) ? Chiaki.session.measuredBitrate.toFixed(1) : "0.0";
+                var w = Chiaki.window.streamWidth ? Chiaki.window.streamWidth : 0;
+                var h = Chiaki.window.streamHeight ? Chiaki.window.streamHeight : 0;
+                var loss = (Chiaki.session && isFinite(Chiaki.session.averagePacketLoss)) ? (Chiaki.session.averagePacketLoss * 100).toFixed(1) : "0.0";
+                var dec = Chiaki.window.decodeLatencyMs ? Chiaki.window.decodeLatencyMs.toFixed(1) : "0.0";
+                var ren = Chiaki.window.renderLatencyMs ? Chiaki.window.renderLatencyMs.toFixed(1) : "0.0";
+                var qd = Chiaki.window.queueDepthAverage ? Chiaki.window.queueDepthAverage.toFixed(1) : "0.0";
+                var pfa = Chiaki.window.pendingFrameAge ? (Chiaki.window.pendingFrameAge * 1000.0).toFixed(0) : "0";
+                // total latency: network transfer (queue wait + pending age) + decode + render
+                var total = (parseFloat(dec) + parseFloat(ren) + parseFloat(qd) * 16.7 + parseFloat(pfa) * 0.5).toFixed(1);
+                var drop = Chiaki.window.droppedFrames ? Chiaki.window.droppedFrames : 0;
+                return qsTr("FPS %1/%2").arg(fps).arg(target)
+                    + qsTr("  Bitrate %1 Mbps").arg(bitrate)
+                    + qsTr("  Resolution %1×%2").arg(w).arg(h)
+                    + qsTr("  Packet Loss %1%").arg(loss)
+                    + qsTr("  Decode %1 ms").arg(dec)
+                    + qsTr("  Render %1 ms").arg(ren)
+                    + qsTr("  Total Latency %1 ms").arg(total)
+                    + qsTr("  Dropped Frames %1").arg(drop);
+            }
+        }
+    }
+
     Component {
         id: streamStatsContent
         Item {

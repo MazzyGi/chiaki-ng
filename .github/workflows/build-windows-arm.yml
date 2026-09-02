@@ -165,6 +165,7 @@ jobs:
           cp "${{ github.workspace }}\vcpkg_installed\${{ env.triplet }}\bin\libcrypto-*.dll" chiaki-ng-Win
           cp "${{ github.workspace }}\vcpkg_installed\${{ env.triplet }}\bin\libssl-*.dll" chiaki-ng-Win
           cp "${{ github.workspace }}\vcpkg_installed\${{ env.triplet }}\bin\SDL2.dll" chiaki-ng-Win
+          cp "${{ github.workspace }}\vcpkg_installed\${{ env.triplet }}\bin\SDL3.dll" chiaki-ng-Win || true
           cp "${{ github.workspace }}\vcpkg_installed\${{ env.triplet }}\bin\hidapi.dll" chiaki-ng-Win
           cp "${{ github.workspace }}\vcpkg_installed\${{ env.triplet }}\bin\fftw3.dll" chiaki-ng-Win
           cp "${{ github.workspace }}\vcpkg_installed\${{ env.triplet }}\bin\opus.dll" chiaki-ng-Win

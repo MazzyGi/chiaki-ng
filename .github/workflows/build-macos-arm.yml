@@ -79,3 +79,14 @@ jobs:
           path: chiaki-ng.dmg
           if-no-files-found: error
           retention-days: 7
+
+      - name: Build summary
+        run: |
+          echo "## macOS arm64 build" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Ad-hoc signed (no Apple Developer certificate)." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 首次安装后去除 Gatekeeper 隔离（避免\"无法验证开发者\"弹窗）：" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "xattr -dr com.apple.quarantine /Applications/chiaki-ng.app" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY

@@ -156,6 +156,20 @@ int real_main(int argc, char *argv[])
 	QGuiApplication::setWindowIcon(QIcon(":/icons/chiaking.svg"));
 #endif
 
+#if defined(Q_OS_MACOS)
+	{
+		// AWDL (AirDrop/Handoff) makes the WiFi chip channel-hop periodically,
+		// causing burst packet loss during streams. Disable it while streaming
+		// and restore it on quit. Only prompts for admin when a change is needed.
+		extern void mac_awdl_disable_on_start();
+		mac_awdl_disable_on_start();
+		QObject::connect(&app, &QCoreApplication::aboutToQuit, &app, []() {
+			extern void mac_awdl_restore_on_exit();
+			mac_awdl_restore_on_exit();
+		});
+	}
+#endif
+
 	QCommandLineParser parser;
 	parser.setOptionsAfterPositionalArgumentsMode(QCommandLineParser::ParseAsPositionalArguments);
 	parser.addHelpOption();

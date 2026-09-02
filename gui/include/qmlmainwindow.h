@@ -67,6 +67,12 @@ class QmlMainWindow : public QWindow
     Q_PROPERTY(int runtimeRendererBackend READ runtimeRendererBackend CONSTANT)
     Q_PROPERTY(double queueDepthAverage READ queueDepthAverage NOTIFY queueDepthAverageChanged)
     Q_PROPERTY(double pendingFrameAge READ pendingFrameAge NOTIFY pendingFrameAgeChanged)
+    Q_PROPERTY(int targetFps READ targetFps NOTIFY targetFpsChanged)
+    Q_PROPERTY(double measuredFps READ measuredFps NOTIFY measuredFpsChanged)
+    Q_PROPERTY(int streamWidth READ streamWidth NOTIFY streamResolutionChanged)
+    Q_PROPERTY(int streamHeight READ streamHeight NOTIFY streamResolutionChanged)
+    Q_PROPERTY(double decodeLatencyMs READ decodeLatencyMs NOTIFY decodeLatencyChanged)
+    Q_PROPERTY(double renderLatencyMs READ renderLatencyMs NOTIFY renderLatencyChanged)
 
 public:
     enum class UpdateRequestReason {
@@ -127,6 +133,12 @@ public:
 
     double queueDepthAverage() const;
     double pendingFrameAge() const;
+    int targetFps() const { return target_fps; }
+    double measuredFps() const { return measured_fps; }
+    int streamWidth() const { return stream_width; }
+    int streamHeight() const { return stream_height; }
+    double decodeLatencyMs() const { return decode_latency_ms; }
+    double renderLatencyMs() const { return render_latency_ms; }
     QString describePlaceboDiscardReason(qint64 now_us) const;
 
     bool amdCard() const;
@@ -180,6 +192,11 @@ signals:
     void directStreamChanged();
     void queueDepthAverageChanged();
     void pendingFrameAgeChanged();
+    void targetFpsChanged();
+    void measuredFpsChanged();
+    void streamResolutionChanged();
+    void decodeLatencyChanged();
+    void renderLatencyChanged();
     void loadingTransitionCompleteChanged();
     void statsOverlayActiveChanged();
 
@@ -319,6 +336,21 @@ private:
     uint64_t pending_frame_stored_us = 0;
     mutable QMutex pending_frame_age_mutex;
     bool startup_warmup_preserve_next_session_change = false;
+
+    // debug stats overlay
+    int target_fps = 0;
+    double measured_fps = 0.0;
+    int stream_width = 0;
+    int stream_height = 0;
+    double decode_latency_ms = 0.0;
+    double render_latency_ms = 0.0;
+    // fps measurement
+    quint64 fps_frame_times[64] = {};
+    int fps_frame_count = 0;
+    int fps_frame_index = 0;
+    quint64 fps_window_start_us = 0;
+    QAtomicInteger<qint64> last_present_us_for_fps = 0;
+    QAtomicInteger<qint64> last_decoder_delivery_us = 0;
 
     pl_cache placebo_cache = {};
     pl_log placebo_log = {};
