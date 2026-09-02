@@ -56,7 +56,8 @@ jobs:
           BREW_LIB=$(brew --prefix)/lib
           # brew's sdl2 2.32+ is the sdl2-compat layer which requires SDL3 at
           # runtime -> bundle SDL3 alongside and point the compat layer at it.
-          SDL3_DYLIB=$(ls "$BREW_LIB"/libSDL3*.dylib 2>/dev/null | grep -v SDL3main | head -1 || true)
+          # sdl3 is keg-only in /opt/homebrew/opt/sdl3/lib - not in BREW_LIB
+          SDL3_DYLIB=$(ls "$BREW_LIB"/libSDL3*.dylib /opt/homebrew/opt/sdl3/lib/libSDL3*.dylib 2>/dev/null | grep -v SDL3main | head -1 || true)
           if [ -n "$SDL3_DYLIB" ]; then
             # keep the exact SONAME (e.g. libSDL3.0.dylib) because sdl2-compat
             # dlopen()s it by that name at runtime
@@ -96,6 +97,11 @@ jobs:
           echo "=== SDL dylibs present ==="
           ls -la chiaki-ng.app/Contents/MacOS/ | grep -i sdl || echo "  (none in MacOS/)"
           ls -la chiaki-ng.app/Contents/Frameworks/ | grep -i sdl || echo "  (none in Frameworks/)"
+          # sdl2-compat hard-requires SDL3 at runtime
+          if ! ls chiaki-ng.app/Contents/MacOS/libSDL3*.dylib >/dev/null 2>&1; then
+            echo "FATAL: SDL3 not bundled - app will crash on user machines"
+            exit 1
+          fi
           echo "=== SDL2 compat layer deps ==="
           for f in chiaki-ng.app/Contents/MacOS/libSDL2*.dylib chiaki-ng.app/Contents/Frameworks/libSDL2*.dylib; do
             [ -f "$f" ] && otool -L "$f" | sed 's/^/  /'
