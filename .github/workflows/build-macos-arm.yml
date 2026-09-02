@@ -54,6 +54,15 @@ jobs:
           fi
           # Deploy SDL2 from brew (name varies by version) into MacOS/
           BREW_LIB=$(brew --prefix)/lib
+          # brew's sdl2 2.32+ is the sdl2-compat layer which requires SDL3 at
+          # runtime -> bundle SDL3 alongside and point the compat layer at it.
+          SDL3_DYLIB=$(ls "$BREW_LIB"/libSDL3*.dylib 2>/dev/null | grep -v SDL3main | head -1 || true)
+          if [ -n "$SDL3_DYLIB" ]; then
+            cp "$SDL3_DYLIB" chiaki-ng.app/Contents/MacOS/libSDL3.dylib
+            install_name_tool -id @executable_path/libSDL3.dylib chiaki-ng.app/Contents/MacOS/libSDL3.dylib
+            install_name_tool -change "$SDL3_DYLIB" @executable_path/libSDL3.dylib chiaki-ng.app/Contents/MacOS/libSDL2-2.0.0.dylib 2>/dev/null || true
+            install_name_tool -change @rpath/libSDL3.0.dylib @executable_path/libSDL3.dylib chiaki-ng.app/Contents/MacOS/libSDL2-2.0.0.dylib 2>/dev/null || true
+          fi
           SDL_DYLIB=$(ls "$BREW_LIB"/libSDL2-2*.dylib 2>/dev/null | head -1 || true)
           if [ -z "$SDL_DYLIB" ]; then
             SDL_DYLIB=$(ls "$BREW_LIB"/libSDL2*.dylib 2>/dev/null | grep -v SDL2main | head -1 || true)
