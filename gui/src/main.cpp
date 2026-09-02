@@ -157,7 +157,10 @@ int real_main(int argc, char *argv[])
 	// causing burst packet loss during streams. Disable it while streaming
 	// and restore it on quit. Only prompts for admin when a change is needed.
 	mac_awdl_disable_on_start();
+	// keep screen awake + prevent idle sleep while the app runs
+	static void *keep_awake_handle = mac_keep_awake_begin();
 	QObject::connect(&app, &QCoreApplication::aboutToQuit, &app, []() {
+		mac_keep_awake_end(keep_awake_handle);
 		mac_awdl_restore_on_exit();
 	});
 #else

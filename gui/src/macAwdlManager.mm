@@ -62,33 +62,27 @@ void mac_awdl_restore_on_exit()
 void *mac_keep_awake_begin()
 {
     // prevent display sleep + system idle sleep while streaming
-    IOPMAssertionID assertion_id = 0;
-    CFStringRef reasons[2] = {
-        CFSTR("chiaki-ng display keep awake"),
-        CFSTR("chiaki-ng system keep awake")
-    };
-    IOPMAssertionType types[2] = { kIOPMAssertionTypePreventUserIdleDisplaySleep,
-                                   kIOPMAssertionTypePreventUserIdleSystemSleep };
-    for (int i = 0; i < 2; i++)
-    {
-        IOPMAssertionID id = 0;
-        if (IOPMAssertionCreateWithName(types[i], kIOPMAssertionLevelOn, reasons[i], &id) == kIOReturnSuccess)
-        {
-            if (assertion_id == 0)
-                assertion_id = id;
-            else
-            {
-                // keep both alive; store the first, let the second live for
-                // process lifetime (auto-released by the system on exit)
-            }
-        }
-    }
-    return reinterpret_cast<void *>(static_cast<uintptr_t>(assertion_id));
+    IOPMAssertionID display_assertion = 0;
+    IOPMAssertionID system_assertion = 0;
+    IOPMAssertionCreateWithName(kIOPMAssertionTypePreventUserIdleDisplaySleep,
+                                kIOPMAssertionLevelOn,
+                                CFSTR("chiaki-ng display keep awake"),
+                                &display_assertion);
+    IOPMAssertionCreateWithName(kIOPMAssertionTypePreventUserIdleSystemSleep,
+                                kIOPMAssertionLevelOn,
+                                CFSTR("chiaki-ng system keep awake"),
+                                &system_assertion);
+    // encode both ids in the handle (they are small integers)
+    return reinterpret_cast<void *>(static_cast<uintptr_t>((display_assertion << 16) | (system_assertion & 0xffff)));
 }
 
 void mac_keep_awake_end(void *handle)
 {
-    IOPMAssertionID id = static_cast<IOPMAssertionID>(reinterpret_cast<uintptr_t>(handle));
-    if (id)
-        IOPMAssertionRelease(id);
+    uintptr_t v = reinterpret_cast<uintptr_t>(handle);
+    IOPMAssertionID display_assertion = static_cast<IOPMAssertionID>(v >> 16);
+    IOPMAssertionID system_assertion = static_cast<IOPMAssertionID>(v & 0xffff);
+    if (display_assertion && display_assertion != static_cast<IOPMAssertionID>(-1))
+        IOPMAssertionRelease(display_assertion);
+    if (system_assertion && system_assertion != static_cast<IOPMAssertionID>(-1))
+        IOPMAssertionRelease(system_assertion);
 }
