@@ -123,6 +123,9 @@ jobs:
           chiaki-ng.app/Contents/MacOS/chiaki > /tmp/smoke.log 2>&1 &
           SMOKE_PID=$!
           sleep 5
+          # dylib load failures die instantly with dyld errors in the log.
+          # Dying AFTER init (e.g. rc=134 abort on a headless CI runner with
+          # no display) means all libraries resolved fine.
           if kill -0 $SMOKE_PID 2>/dev/null; then
             echo "still running after 5s -> dylib load OK"
             kill -9 $SMOKE_PID 2>/dev/null
@@ -130,8 +133,12 @@ jobs:
             wait $SMOKE_PID
             RC=$?
             echo "process died rc=$RC"
-            head -20 /tmp/smoke.log
-            [ $RC -eq 0 ] || exit 1
+            head -30 /tmp/smoke.log
+            if grep -qiE "dyld|Library not loaded|image not found" /tmp/smoke.log; then
+              echo "FATAL: dylib load failure"
+              exit 1
+            fi
+            echo "no dyld errors -> libraries resolved (GUI abort on headless runner is expected)"
           fi
 
       - name: Upload chiaki-ng Artifact
