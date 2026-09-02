@@ -29,9 +29,27 @@ jobs:
           brew uninstall pkgconfig || true
           brew install --force qt@6 ffmpeg pkgconfig opus openssl cmake ninja nasm protobuf@29 speexdsp libplacebo wget python-setuptools json-c miniupnpc libevent
 
+      - name: Build real SDL2 (not sdl2-compat)
+        run: |
+          curl -L https://github.com/libsdl-org/SDL/releases/download/release-2.30.22/SDL2-2.30.22.tar.gz -o sdl2.tar.gz
+          tar xf sdl2.tar.gz
+          cd SDL2-2.30.22
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_ARCHITECTURES="arm64" \
+            -DSDL_SHARED=ON -DSDL_STATIC=OFF -DSDL_TEST=OFF \
+            -DSDL_X11=OFF -DSDL_WAYLAND=OFF -DSDL_COCOA=ON -DSDL_METAL=ON \
+            -DHAVE_LIBICONV=ON
+          cmake --build build
+          sudo cmake --install build
+          sudo ln -sf /usr/local/lib/libSDL2-2.0.0.dylib /opt/homebrew/lib/libSDL2-2.0.0.dylib 2>/dev/null || true
+          cd ..
+          rm -rf SDL2-2.30.22 sdl2.tar.gz
+          echo "real SDL2 installed:"
+          otool -L /usr/local/lib/libSDL2-2.0.0.dylib | head -6
+
       - name: Configure chiaki-ng
         run: |
-          cmake -S . -B build -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DCHIAKI_ENABLE_CLI=OFF -DCHIAKI_ENABLE_STEAMDECK_NATIVE=OFF -DCMAKE_PREFIX_PATH="$(brew --prefix)/opt/@openssl@3;$(brew --prefix)/opt/qt@6;$(brew --prefix)/opt/protobuf@29"
+          cmake -S . -B build -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DCHIAKI_ENABLE_CLI=OFF -DCHIAKI_ENABLE_STEAMDECK_NATIVE=OFF -DCMAKE_PREFIX_PATH="/usr/local;$(brew --prefix)/opt/@openssl@3;$(brew --prefix)/opt/qt@6;$(brew --prefix)/opt/protobuf@29"
 
       - name: Build chiaki-ng
         run: |
@@ -52,37 +70,12 @@ jobs:
           then
             ln -s ../../../../../../../Frameworks chiaki-ng.app/Contents/Frameworks/QtWebEngineCore.framework/Helpers/QtWebEngineProcess.app/Contents
           fi
-          # Deploy SDL2 from brew (name varies by version) into MacOS/
-          BREW_LIB=$(brew --prefix)/lib
-          # brew's sdl2 2.32+ is the sdl2-compat layer which requires SDL3 at
-          # runtime -> bundle SDL3 alongside and point the compat layer at it.
-          # sdl3 is keg-only in /opt/homebrew/opt/sdl3/lib - not in BREW_LIB
-          SDL3_DYLIB=$(ls "$BREW_LIB"/libSDL3*.dylib /opt/homebrew/opt/sdl3/lib/libSDL3*.dylib 2>/dev/null | grep -v SDL3main | head -1 || true)
-          if [ -n "$SDL3_DYLIB" ]; then
-            # keep the exact SONAME (e.g. libSDL3.0.dylib) because sdl2-compat
-            # dlopen()s it by that name at runtime
-            SDL3_NAME=$(basename "$SDL3_DYLIB")
-            cp "$SDL3_DYLIB" "chiaki-ng.app/Contents/MacOS/$SDL3_NAME"
-            install_name_tool -id @executable_path/$SDL3_NAME "chiaki-ng.app/Contents/MacOS/$SDL3_NAME"
-            install_name_tool -change "$SDL3_DYLIB" @executable_path/$SDL3_NAME chiaki-ng.app/Contents/MacOS/libSDL2-2.0.0.dylib 2>/dev/null || true
-            install_name_tool -change @rpath/$SDL3_NAME @executable_path/$SDL3_NAME chiaki-ng.app/Contents/MacOS/libSDL2-2.0.0.dylib 2>/dev/null || true
-            # also try launching the app headlessly to catch load errors
-          fi
-          SDL_DYLIB=$(ls "$BREW_LIB"/libSDL2-2*.dylib 2>/dev/null | head -1 || true)
-          if [ -z "$SDL_DYLIB" ]; then
-            SDL_DYLIB=$(ls "$BREW_LIB"/libSDL2*.dylib 2>/dev/null | grep -v SDL2main | head -1 || true)
-          fi
-          if [ -n "$SDL_DYLIB" ]; then
-            cp "$SDL_DYLIB" chiaki-ng.app/Contents/MacOS/libSDL2-2.0.0.dylib
-            install_name_tool -id @executable_path/libSDL2-2.0.0.dylib chiaki-ng.app/Contents/MacOS/libSDL2-2.0.0.dylib
-            SDL_REF=$(otool -L chiaki-ng.app/Contents/MacOS/chiaki | grep -i sdl2 | awk '{print $1}' | head -1 || true)
-            if [ -n "$SDL_REF" ]; then
-              install_name_tool -change "$SDL_REF" @executable_path/libSDL2-2.0.0.dylib chiaki-ng.app/Contents/MacOS/chiaki || true
-            fi
-            install_name_tool -change "$SDL_DYLIB" @executable_path/libSDL2-2.0.0.dylib chiaki-ng.app/Contents/MacOS/chiaki || true
-            install_name_tool -change @rpath/libSDL2-2.0.0.dylib @executable_path/libSDL2-2.0.0.dylib chiaki-ng.app/Contents/MacOS/chiaki || true
-            install_name_tool -change /usr/local/lib/libSDL2-2.0.0.dylib @executable_path/libSDL2-2.0.0.dylib chiaki-ng.app/Contents/MacOS/chiaki || true
-            install_name_tool -change /opt/homebrew/lib/libSDL2-2.0.0.dylib @executable_path/libSDL2-2.0.0.dylib chiaki-ng.app/Contents/MacOS/chiaki || true
+          # Deploy the real SDL2 built from source
+          cp /usr/local/lib/libSDL2-2.0.0.dylib chiaki-ng.app/Contents/MacOS/libSDL2-2.0.0.dylib
+          install_name_tool -id @executable_path/libSDL2-2.0.0.dylib chiaki-ng.app/Contents/MacOS/libSDL2-2.0.0.dylib
+          SDL_REF=$(otool -L chiaki-ng.app/Contents/MacOS/chiaki | grep -i sdl2 | awk '{print $1}' | head -1 || true)
+          if [ -n "$SDL_REF" ]; then
+            install_name_tool -change "$SDL_REF" @executable_path/libSDL2-2.0.0.dylib chiaki-ng.app/Contents/MacOS/chiaki || true
           fi
           ln -s libvulkan.1.dylib chiaki-ng.app/Contents/Frameworks/vulkan || true
           codesign --force --entitlements gui/entitlements.xml --deep --sign - chiaki-ng.app
@@ -97,9 +90,13 @@ jobs:
           echo "=== SDL dylibs present ==="
           ls -la chiaki-ng.app/Contents/MacOS/ | grep -i sdl || echo "  (none in MacOS/)"
           ls -la chiaki-ng.app/Contents/Frameworks/ | grep -i sdl || echo "  (none in Frameworks/)"
-          # sdl2-compat hard-requires SDL3 at runtime
-          if ! ls chiaki-ng.app/Contents/MacOS/libSDL3*.dylib >/dev/null 2>&1; then
-            echo "FATAL: SDL3 not bundled - app will crash on user machines"
+          # real SDL2 must be bundled and must NOT depend on SDL3
+          if ! ls chiaki-ng.app/Contents/MacOS/libSDL2-2.0.0.dylib >/dev/null 2>&1; then
+            echo "FATAL: SDL2 not bundled"
+            exit 1
+          fi
+          if otool -L chiaki-ng.app/Contents/MacOS/libSDL2-2.0.0.dylib | grep -q SDL3; then
+            echo "FATAL: SDL2 is the compat layer (depends on SDL3)!"
             exit 1
           fi
           echo "=== SDL2 compat layer deps ==="
