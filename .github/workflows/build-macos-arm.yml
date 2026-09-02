@@ -58,10 +58,14 @@ jobs:
           # runtime -> bundle SDL3 alongside and point the compat layer at it.
           SDL3_DYLIB=$(ls "$BREW_LIB"/libSDL3*.dylib 2>/dev/null | grep -v SDL3main | head -1 || true)
           if [ -n "$SDL3_DYLIB" ]; then
-            cp "$SDL3_DYLIB" chiaki-ng.app/Contents/MacOS/libSDL3.dylib
-            install_name_tool -id @executable_path/libSDL3.dylib chiaki-ng.app/Contents/MacOS/libSDL3.dylib
-            install_name_tool -change "$SDL3_DYLIB" @executable_path/libSDL3.dylib chiaki-ng.app/Contents/MacOS/libSDL2-2.0.0.dylib 2>/dev/null || true
-            install_name_tool -change @rpath/libSDL3.0.dylib @executable_path/libSDL3.dylib chiaki-ng.app/Contents/MacOS/libSDL2-2.0.0.dylib 2>/dev/null || true
+            # keep the exact SONAME (e.g. libSDL3.0.dylib) because sdl2-compat
+            # dlopen()s it by that name at runtime
+            SDL3_NAME=$(basename "$SDL3_DYLIB")
+            cp "$SDL3_DYLIB" "chiaki-ng.app/Contents/MacOS/$SDL3_NAME"
+            install_name_tool -id @executable_path/$SDL3_NAME "chiaki-ng.app/Contents/MacOS/$SDL3_NAME"
+            install_name_tool -change "$SDL3_DYLIB" @executable_path/$SDL3_NAME chiaki-ng.app/Contents/MacOS/libSDL2-2.0.0.dylib 2>/dev/null || true
+            install_name_tool -change @rpath/$SDL3_NAME @executable_path/$SDL3_NAME chiaki-ng.app/Contents/MacOS/libSDL2-2.0.0.dylib 2>/dev/null || true
+            # also try launching the app headlessly to catch load errors
           fi
           SDL_DYLIB=$(ls "$BREW_LIB"/libSDL2-2*.dylib 2>/dev/null | head -1 || true)
           if [ -z "$SDL_DYLIB" ]; then
@@ -84,6 +88,43 @@ jobs:
           rm -f chiaki-ng.dmg
           hdiutil create -srcfolder chiaki-ng.app chiaki-ng.dmg
           codesign --force --entitlements gui/entitlements.xml --deep --sign - chiaki-ng.dmg
+
+      - name: Verify dynamic library resolution
+        run: |
+          echo "=== chiaki executable deps ==="
+          otool -L chiaki-ng.app/Contents/MacOS/chiaki | sed 's/^/  /'
+          echo "=== SDL dylibs present ==="
+          ls -la chiaki-ng.app/Contents/MacOS/ | grep -i sdl || echo "  (none in MacOS/)"
+          ls -la chiaki-ng.app/Contents/Frameworks/ | grep -i sdl || echo "  (none in Frameworks/)"
+          echo "=== SDL2 compat layer deps ==="
+          for f in chiaki-ng.app/Contents/MacOS/libSDL2*.dylib chiaki-ng.app/Contents/Frameworks/libSDL2*.dylib; do
+            [ -f "$f" ] && otool -L "$f" | sed 's/^/  /'
+          done
+          echo "=== unresolved @rpath/@executable refs ==="
+          BAD=0
+          for ref in $(otool -L chiaki-ng.app/Contents/MacOS/chiaki | awk '{print $1}' | grep -E '^@rpath'); do
+            name=$(basename "$ref")
+            if ! ls chiaki-ng.app/Contents/MacOS/ chiaki-ng.app/Contents/Frameworks/ 2>/dev/null | grep -q "$name"; then
+              echo "  MISSING: $ref"
+              BAD=1
+            fi
+          done
+          exit $BAD
+
+      - name: Launch smoke test (SDL init)
+        run: |
+          # --help runs SDL_Init(AUDIO) + parses args then exits.
+          # If SDL dylibs are broken this crashes immediately.
+          set +e
+          chiaki-ng.app/Contents/MacOS/chiaki --help > /tmp/smoke.log 2>&1
+          RC=$?
+          set -e
+          echo "exit code: $RC"
+          cat /tmp/smoke.log | head -20
+          if [ $RC -ne 0 ]; then
+            echo "LAUNCH FAILED"
+            exit 1
+          fi
 
       - name: Upload chiaki-ng Artifact
         uses: actions/upload-artifact@v4
