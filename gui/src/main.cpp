@@ -15,6 +15,9 @@ int main(int argc, char *argv[]) { return real_main(argc, argv); }
 
 #include <streamsession.h>
 #include <settings.h>
+#if defined(Q_OS_MACOS)
+#include "macAwdlManager.h"
+#endif
 #include <host.h>
 #include <controllermanager.h>
 #include <discoverymanager.h>
@@ -161,10 +164,8 @@ int real_main(int argc, char *argv[])
 		// AWDL (AirDrop/Handoff) makes the WiFi chip channel-hop periodically,
 		// causing burst packet loss during streams. Disable it while streaming
 		// and restore it on quit. Only prompts for admin when a change is needed.
-		extern void mac_awdl_disable_on_start();
 		mac_awdl_disable_on_start();
 		QObject::connect(&app, &QCoreApplication::aboutToQuit, &app, []() {
-			extern void mac_awdl_restore_on_exit();
 			mac_awdl_restore_on_exit();
 		});
 	}
