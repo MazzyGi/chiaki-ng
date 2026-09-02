@@ -122,7 +122,7 @@ int real_main(int argc, char *argv[])
 	// explicit locale like "zh_CN" / "en". Loads from the app bundle on macOS
 	// or next to the executable elsewhere.
 	{
-		Settings lang_settings(QString());
+		Settings lang_settings{QString()};
 		QString locale = lang_settings.GetLanguage();
 		if (locale == "en")
 			locale.clear(); // default, no translation file
