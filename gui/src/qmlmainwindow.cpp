@@ -5877,6 +5877,12 @@ void QmlMainWindow::createSwapchain()
         .present_mode = settings->GetVSyncEnabled() ? VK_PRESENT_MODE_FIFO_KHR
                                                     : VK_PRESENT_MODE_IMMEDIATE_KHR,
         .swapchain_depth = swapchain_depth,
+        // Avoid 10-bit/HDR backbuffers on macOS where MoltenVK selects a
+        // wide-gamut/EDR (HDR10_ST2084) surface by default on ProMotion/XDR
+        // displays. Rendering SDR video into a 10-bit EDR surface forces an
+        // expensive tone-mapping pass per frame and increases bandwidth,
+        // causing dropped frames and "AVCodec internal buffer is full".
+        .disable_10bit_sdr = true,
     };
     placebo_swapchain = pl_vulkan_create_swapchain(placebo_vulkan, &swapchain_params);
     present_vsync_enabled = swapchain_params.present_mode != VK_PRESENT_MODE_IMMEDIATE_KHR;

@@ -1056,11 +1056,13 @@ void QmlBackend::createSession(const StreamSessionConnectInfo &connect_info)
             session_info.hw_decoder = "d3d11va";
         }
 #elif defined(Q_OS_MACOS)
-        if(availableDecoders.contains("videotoolbox"))
-        {
-            qCInfo(chiakiGui) << "Auto hw decoder selecting videotoolbox";
-            session_info.hw_decoder = "videotoolbox";
-        }
+        // Prefer software decoding on macOS. VideoToolbox hardware frames
+        // cannot use zero-copy rendering with the Vulkan/MoltenVK backend
+        // (frame_can_use_direct_render returns false), so every frame would
+        // need a blocking GPU->CPU transfer followed by a CPU->GPU upload.
+        // Software decode produces CPU frames directly and is more than fast
+        // enough on Apple Silicon for 1080p60, avoiding that double copy.
+        qCInfo(chiakiGui) << "Auto hw decoder: using software decoding on macOS";
 #endif
     }
     fallbackVulkanDecoderForOpenGL();
