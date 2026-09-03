@@ -67,9 +67,8 @@ jobs:
           fi
           ln -s libvulkan.1.dylib chiaki-ng.app/Contents/Frameworks/vulkan || true
           codesign --force --entitlements gui/entitlements.xml --deep --sign - chiaki-ng.app
-          rm -f chiaki-ng.dmg
-          hdiutil create -srcfolder chiaki-ng.app chiaki-ng.dmg
-          codesign --force --entitlements gui/entitlements.xml --deep --sign - chiaki-ng.dmg
+
+      - name: Launch smoke test (window + vulkan)
 
       - name: Verify dynamic library resolution
         run: |
@@ -160,6 +159,26 @@ jobs:
             fi
           fi
           echo "SMOKE TEST PASSED"
+
+      - name: Package dmg (after smoke test released the app)
+        run: |
+          # wait for any process holding the app to exit, then build the dmg
+          for i in $(seq 1 10); do
+            if ! pgrep -f chiaki-ng.app >/dev/null 2>&1; then break; fi
+            sleep 2
+          done
+          pkill -9 -f chiaki-ng.app 2>/dev/null || true
+          sleep 2
+          rm -f chiaki-ng.dmg
+          hdiutil create -srcfolder chiaki-ng.app chiaki-ng.dmg || {
+            echo "retrying hdiutil after detaching stale shadow mounts..."
+            hdiutil info | grep -i shadow || true
+            for m in $(hdiutil info | grep -B2 shadow | grep "^image-alias" | awk '{print $3}'); do hdiutil detach "$m" -force 2>/dev/null || true; done
+            sleep 3
+            rm -f chiaki-ng.dmg
+            hdiutil create -srcfolder chiaki-ng.app chiaki-ng.dmg
+          }
+          codesign --force --entitlements gui/entitlements.xml --deep --sign - chiaki-ng.dmg
 
       - name: Upload chiaki-ng Artifact
         uses: actions/upload-artifact@v4
