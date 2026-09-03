@@ -299,7 +299,21 @@ void QmlMainWindow::show()
     {
         if(!settings->GetGeometry().isEmpty())
         {
-            setGeometry(settings->GetGeometry());
+            QRect geo = settings->GetGeometry();
+            // clamp restored geometry into a visible screen
+            QScreen *screen = QGuiApplication::primaryScreen();
+            for (QScreen *s : QGuiApplication::screens())
+                if (geo.intersects(s->availableGeometry()))
+                    { screen = s; break; }
+            if (screen && !geo.intersects(screen->availableGeometry()))
+            {
+                const QRect avail = screen->availableGeometry();
+                geo.moveTopLeft(avail.topLeft());
+                geo = geo.intersected(QRect(avail.topLeft(), geo.size()));
+                if (geo.width() < 200 || geo.height() < 150)
+                    geo = avail;
+            }
+            setGeometry(geo);
             showNormal();
         }
         else
@@ -779,10 +793,11 @@ void QmlMainWindow::createSwapchain()
 #elif defined(Q_OS_MACOS)
     VkMetalSurfaceCreateInfoEXT surfaceInfo = {};
     surfaceInfo.sType = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT;
-    // winId() is an NSView whose -layer may not be a CAMetalLayer on newer
-    // Qt/macOS combinations (MoltenVK then throws doesNotRecognizeSelector
-    // inside MVKSurface::getNaturalExtent). Prefer -backingLayer when
-    // available and fall back to installing a CAMetalLayer on the view.
+    // winId()'s -layer is not guaranteed to be a CAMetalLayer on newer Qt.
+    // MoltenVK then crashes in MVKSurface::getNaturalExtent. Wrap all objc
+    // calls in an autorelease pool (we may run on a non-main dispatch queue
+    // where autoreleased objects have no pool -> objc_exception_throw).
+    @autoreleasepool {
     id view = reinterpret_cast<id>(winId());
     id layer = static_cast<id>(reinterpret_cast<void*(*)(id, SEL)>(objc_msgSend)(view, sel_registerName("layer")));
     id backing = static_cast<id>(reinterpret_cast<void*(*)(id, SEL)>(objc_msgSend)(view, sel_registerName("backingLayer")));
@@ -805,6 +820,7 @@ void QmlMainWindow::createSwapchain()
         }
     }
     surfaceInfo.pLayer = static_cast<const CAMetalLayer*>(layer);
+    }
     err = vk_funcs.vkCreateMetalSurfaceEXT(placebo_vk_inst->instance, &surfaceInfo, nullptr, &surface);
 #elif defined(Q_OS_WIN32)
     VkWin32SurfaceCreateInfoKHR surfaceInfo = {};

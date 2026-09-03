@@ -80,6 +80,17 @@ int real_main(int argc, char *argv[])
 		QGuiApplication::setDesktopFileName("chiaki-ng");
 
 	qputenv("QTWEBENGINE_CHROMIUM_FLAGS", "--disable-gpu");
+
+#if defined(Q_OS_MACOS)
+	{
+		// Force the Vulkan loader to use the MoltenVK ICD bundled inside the
+		// app instead of whatever the user's Homebrew environment provides
+		// (stale brew MoltenVK versions crash on newer macOS).
+		QString icd = QCoreApplication::applicationDirPath() + "/../Resources/vulkan/icd.d/MoltenVK_icd.json";
+		if (QFile::exists(icd))
+			qputenv("VK_ADD_DRIVER_FILES", icd.toUtf8());
+	}
+#endif
 #if defined(Q_OS_WIN)
 	const size_t cSize = strlen(argv[0])+1;
 	wchar_t wc[cSize];
