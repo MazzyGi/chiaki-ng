@@ -796,7 +796,8 @@ void QmlMainWindow::createSwapchain()
         // make the view layer-backed with a metal layer
         reinterpret_cast<void(*)(id, SEL, BOOL)>(objc_msgSend)(view, sel_registerName("setWantsLayer:"), YES);
         Class metal_class = objc_getClass("CAMetalLayer");
-        id metal_layer = static_cast<id>(reinterpret_cast<void*(*)(id, SEL)>(objc_msgSend)(static_cast<id>(metal_class), sel_registerName("layer")));
+        id metal_cls_obj = reinterpret_cast<id>(metal_class);
+        id metal_layer = static_cast<id>(reinterpret_cast<void*(*)(id, SEL)>(objc_msgSend)(metal_cls_obj, sel_registerName("layer")));
         if (metal_layer)
         {
             reinterpret_cast<void(*)(id, SEL, id)>(objc_msgSend)(view, sel_registerName("setLayer:"), metal_layer);
