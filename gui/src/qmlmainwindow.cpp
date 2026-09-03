@@ -784,8 +784,8 @@ void QmlMainWindow::createSwapchain()
     // inside MVKSurface::getNaturalExtent). Prefer -backingLayer when
     // available and fall back to installing a CAMetalLayer on the view.
     id view = reinterpret_cast<id>(winId());
-    id layer = reinterpret_cast<void*(*)(id, SEL)>(objc_msgSend)(view, sel_registerName("layer"));
-    id backing = reinterpret_cast<void*(*)(id, SEL)>(objc_msgSend)(view, sel_registerName("backingLayer"));
+    id layer = static_cast<id>(reinterpret_cast<void*(*)(id, SEL)>(objc_msgSend)(view, sel_registerName("layer")));
+    id backing = static_cast<id>(reinterpret_cast<void*(*)(id, SEL)>(objc_msgSend)(view, sel_registerName("backingLayer")));
     if (backing)
         layer = backing;
     BOOL is_metal = NO;
@@ -795,7 +795,7 @@ void QmlMainWindow::createSwapchain()
     {
         // make the view layer-backed with a metal layer
         reinterpret_cast<void(*)(id, SEL, BOOL)>(objc_msgSend)(view, sel_registerName("setWantsLayer:"), YES);
-        id metal_layer = reinterpret_cast<id(*)(Class, SEL)>(objc_msgSend)(objc_getClass("CAMetalLayer"), sel_registerName("layer"));
+        id metal_layer = static_cast<id>(reinterpret_cast<void*(*)(id, SEL)>(objc_msgSend)(objc_getClass("CAMetalLayer"), sel_registerName("layer")));
         if (metal_layer)
         {
             reinterpret_cast<void(*)(id, SEL, id)>(objc_msgSend)(view, sel_registerName("setLayer:"), metal_layer);
