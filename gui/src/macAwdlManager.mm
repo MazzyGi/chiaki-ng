@@ -7,6 +7,7 @@
 #import <QuartzCore/QuartzCore.h>
 #import <IOKit/pwr_mgt/IOPMLib.h>
 #import <objc/message.h>
+#import <objc/runtime.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -45,6 +46,8 @@ CAMetalLayer *mac_resolve_metal_layer(void *nsview)
             if ([content isKindOfClass:[CAMetalLayer class]]) {
                 g_surface_layer = (CAMetalLayer *)content;
                 g_layer_is_ours = false;
+                NSLog(@"[chiaki] metal layer: QContainerLayer.contentLayer (%@, frame=%@, drawable=%@)",
+                    content, NSStringFromRect(content.frame), NSStringFromSize(((CAMetalLayer *)content).drawableSize));
                 return g_surface_layer;
             }
         }
@@ -52,6 +55,8 @@ CAMetalLayer *mac_resolve_metal_layer(void *nsview)
         if ([layer isKindOfClass:[CAMetalLayer class]]) {
             g_surface_layer = (CAMetalLayer *)layer;
             g_layer_is_ours = false;
+            NSLog(@"[chiaki] metal layer: view.layer directly (%@, superlayer=%@)",
+                layer, [layer superlayer]);
             return g_surface_layer;
         }
 
@@ -60,6 +65,8 @@ CAMetalLayer *mac_resolve_metal_layer(void *nsview)
         [layer addSublayer:metal];
         g_surface_layer = metal;
         g_layer_is_ours = true;
+        NSLog(@"[chiaki] metal layer: FALLBACK own sublayer under %@ (view layer class: %s)",
+            layer, class_getName(object_getClass(layer)));
         return metal;
     }
 }
@@ -166,6 +173,8 @@ void mac_sync_layer_drawable_size(void *nsview, int w, int h)
         }
         [layer setDrawableSize:CGSizeMake(w, h)];
         [CATransaction commit];
+        NSLog(@"[chiaki] sync drawable %dx%d (ours=%d frame=%@ scale=%.1f)", w, h,
+            (int)g_layer_is_ours, NSStringFromRect(layer.frame), layer.contentsScale);
     }
 }
 
