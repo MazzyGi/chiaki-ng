@@ -2,6 +2,7 @@
 set(SOURCE
 		include/chiaki-cli.h
 		src/discover.c
+		src/regist.c
 		src/wakeup.c)
 
 add_library(chiaki-cli-lib STATIC ${SOURCE})

@@ -84,7 +84,7 @@ static int do_register(const char *host, const char *psn_account_id_b64,
 	ChiakiRegistInfo info = {};
 	info.host = host;
 	info.target = CHIAKI_TARGET_PS5_1;
-	info.broadcast = false;
+	info.broadcast = true;
 	info.psn_online_id = NULL;
 	memcpy(info.psn_account_id, account_id, sizeof(account_id));
 	info.pin = (uint32_t)strtoul(pin_str, NULL, 10);
