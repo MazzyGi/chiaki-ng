@@ -21,21 +21,29 @@ CAMetalLayer *mac_resolve_metal_layer(void *nsview)
         if (!nsview)
             return nil;
         id view = reinterpret_cast<id>(nsview);
-        id layer = static_cast<id>(reinterpret_cast<void *(*)(id, SEL)>(objc_msgSend)(view, sel_registerName("layer")));
-        id backing = static_cast<id>(reinterpret_cast<void *(*)(id, SEL)>(objc_msgSend)(view, sel_registerName("backingLayer")));
-        if (backing)
-            layer = backing;
+        SEL layer_sel = sel_registerName("layer");
+        SEL wants_layer_sel = sel_registerName("setWantsLayer:");
+        SEL set_layer_sel = sel_registerName("setLayer:");
+        SEL kind_sel = sel_registerName("isKindOfClass:");
+
+        // Only use selectors the view actually implements.
+        if (!(BOOL)reinterpret_cast<void *(*)(id, SEL, void *)>(objc_msgSend)(view, sel_registerName("respondsToSelector:"), (void *)layer_sel))
+            return nil;
+
+        id layer = static_cast<id>(reinterpret_cast<void *(*)(id, SEL)>(objc_msgSend)(view, layer_sel));
         BOOL is_metal = NO;
         if (layer)
-            is_metal = (BOOL)reinterpret_cast<void *(*)(id, SEL, void *)>(objc_msgSend)(layer, sel_registerName("isKindOfClass:"), objc_getClass("CAMetalLayer"));
+            is_metal = (BOOL)reinterpret_cast<void *(*)(id, SEL, void *)>(objc_msgSend)(layer, kind_sel, objc_getClass("CAMetalLayer"));
         if (!is_metal)
         {
-            reinterpret_cast<void (*)(id, SEL, BOOL)>(objc_msgSend)(view, sel_registerName("setWantsLayer:"), YES);
+            // Ensure the view is layer-backed and install a CAMetalLayer.
+            if ((BOOL)reinterpret_cast<void *(*)(id, SEL, void *)>(objc_msgSend)(view, sel_registerName("respondsToSelector:"), (void *)wants_layer_sel))
+                reinterpret_cast<void (*)(id, SEL, BOOL)>(objc_msgSend)(view, wants_layer_sel, YES);
             id metal_cls = reinterpret_cast<id>(objc_getClass("CAMetalLayer"));
-            id metal_layer = static_cast<id>(reinterpret_cast<void *(*)(id, SEL)>(objc_msgSend)(metal_cls, sel_registerName("layer")));
-            if (metal_layer)
+            id metal_layer = static_cast<id>(reinterpret_cast<void *(*)(id, SEL)>(objc_msgSend)(metal_cls, layer_sel));
+            if (metal_layer && (BOOL)reinterpret_cast<void *(*)(id, SEL, void *)>(objc_msgSend)(view, sel_registerName("respondsToSelector:"), (void *)set_layer_sel))
             {
-                reinterpret_cast<void (*)(id, SEL, id)>(objc_msgSend)(view, sel_registerName("setLayer:"), metal_layer);
+                reinterpret_cast<void (*)(id, SEL, id)>(objc_msgSend)(view, set_layer_sel, metal_layer);
                 layer = metal_layer;
             }
         }
