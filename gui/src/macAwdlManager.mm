@@ -3,9 +3,45 @@
 
 #import <Security/Security.h>
 #import <Foundation/Foundation.h>
+#import <QuartzCore/QuartzCore.h>
 #import <IOKit/pwr_mgt/IOPMLib.h>
+#import <objc/message.h>
 #include <stdio.h>
 #include <string.h>
+
+// Resolve a CAMetalLayer for a Qt NSView. Newer Qt/macOS combinations may
+// expose a non-metal (or no) layer via -layer, which makes MoltenVK throw
+// doesNotRecognizeSelector inside MVKSurface::getNaturalExtent. Prefer
+// -backingLayer when present; otherwise install a fresh CAMetalLayer.
+// Runs inside an autorelease pool because this may execute on a render
+// thread without one.
+CAMetalLayer *mac_resolve_metal_layer(void *nsview)
+{
+    @autoreleasepool {
+        if (!nsview)
+            return nil;
+        id view = reinterpret_cast<id>(nsview);
+        id layer = static_cast<id>(reinterpret_cast<void *(*)(id, SEL)>(objc_msgSend)(view, sel_registerName("layer")));
+        id backing = static_cast<id>(reinterpret_cast<void *(*)(id, SEL)>(objc_msgSend)(view, sel_registerName("backingLayer")));
+        if (backing)
+            layer = backing;
+        BOOL is_metal = NO;
+        if (layer)
+            is_metal = (BOOL)reinterpret_cast<void *(*)(id, SEL, void *)>(objc_msgSend)(layer, sel_registerName("isKindOfClass:"), objc_getClass("CAMetalLayer"));
+        if (!is_metal)
+        {
+            reinterpret_cast<void (*)(id, SEL, BOOL)>(objc_msgSend)(view, sel_registerName("setWantsLayer:"), YES);
+            id metal_cls = reinterpret_cast<id>(objc_getClass("CAMetalLayer"));
+            id metal_layer = static_cast<id>(reinterpret_cast<void *(*)(id, SEL)>(objc_msgSend)(metal_cls, sel_registerName("layer")));
+            if (metal_layer)
+            {
+                reinterpret_cast<void (*)(id, SEL, id)>(objc_msgSend)(view, sel_registerName("setLayer:"), metal_layer);
+                layer = metal_layer;
+            }
+        }
+        return static_cast<CAMetalLayer *>(layer);
+    }
+}
 
 static bool awdl_interface_is_up()
 {

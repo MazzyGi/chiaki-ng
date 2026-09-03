@@ -793,34 +793,10 @@ void QmlMainWindow::createSwapchain()
 #elif defined(Q_OS_MACOS)
     VkMetalSurfaceCreateInfoEXT surfaceInfo = {};
     surfaceInfo.sType = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT;
-    // winId()'s -layer is not guaranteed to be a CAMetalLayer on newer Qt.
-    // MoltenVK then crashes in MVKSurface::getNaturalExtent. Wrap all objc
-    // calls in an autorelease pool (we may run on a non-main dispatch queue
-    // where autoreleased objects have no pool -> objc_exception_throw).
-    @autoreleasepool {
-    id view = reinterpret_cast<id>(winId());
-    id layer = static_cast<id>(reinterpret_cast<void*(*)(id, SEL)>(objc_msgSend)(view, sel_registerName("layer")));
-    id backing = static_cast<id>(reinterpret_cast<void*(*)(id, SEL)>(objc_msgSend)(view, sel_registerName("backingLayer")));
-    if (backing)
-        layer = backing;
-    BOOL is_metal = NO;
-    if (layer)
-        is_metal = (BOOL)reinterpret_cast<void*(*)(id, SEL, void*)>(objc_msgSend)(layer, sel_registerName("isKindOfClass:"), objc_getClass("CAMetalLayer"));
-    if (!is_metal)
-    {
-        // make the view layer-backed with a metal layer
-        reinterpret_cast<void(*)(id, SEL, BOOL)>(objc_msgSend)(view, sel_registerName("setWantsLayer:"), YES);
-        Class metal_class = objc_getClass("CAMetalLayer");
-        id metal_cls_obj = reinterpret_cast<id>(metal_class);
-        id metal_layer = static_cast<id>(reinterpret_cast<void*(*)(id, SEL)>(objc_msgSend)(metal_cls_obj, sel_registerName("layer")));
-        if (metal_layer)
-        {
-            reinterpret_cast<void(*)(id, SEL, id)>(objc_msgSend)(view, sel_registerName("setLayer:"), metal_layer);
-            layer = metal_layer;
-        }
-    }
-    surfaceInfo.pLayer = static_cast<const CAMetalLayer*>(layer);
-    }
+    // resolve a CAMetalLayer for the view via the ObjC++ helper
+    // (handles Qt views whose -layer is not metal + autorelease pools)
+    extern CAMetalLayer *mac_resolve_metal_layer(void *nsview);
+    surfaceInfo.pLayer = mac_resolve_metal_layer(reinterpret_cast<void*>(winId()));
     err = vk_funcs.vkCreateMetalSurfaceEXT(placebo_vk_inst->instance, &surfaceInfo, nullptr, &surface);
 #elif defined(Q_OS_WIN32)
     VkWin32SurfaceCreateInfoKHR surfaceInfo = {};

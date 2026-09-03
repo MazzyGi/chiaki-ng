@@ -102,34 +102,49 @@ jobs:
           done
           exit $BAD
 
-      - name: Launch smoke test (dylib load)
+      - name: Launch smoke test (window + vulkan)
         run: |
-          # Run the binary in the background for 5s. If any dylib fails to
-          # load (missing SDL3, bad install_name) the process dies instantly
-          # with a non-zero exit. Hanging (GUI waiting) = libs loaded fine.
+          # Full GUI smoke test: launch the real app, wait for the main
+          # window + Vulkan swapchain, verify no objc exceptions, screenshot
+          # the screen to prove the UI rendered.
           set +e
           chiaki-ng.app/Contents/MacOS/chiaki > /tmp/smoke.log 2>&1 &
           SMOKE_PID=$!
-          sleep 5
-          # dylib load failures die instantly with dyld errors in the log.
-          # Dying AFTER init (e.g. rc=134 abort on a headless CI runner with
-          # no display) means all libraries resolved fine.
+          sleep 12
+          ALIVE=0
           if kill -0 $SMOKE_PID 2>/dev/null; then
-            echo "still running after 5s -> dylib load OK"
-            kill -9 $SMOKE_PID 2>/dev/null
+            ALIVE=1
+            echo "app still running after 12s"
           else
             wait $SMOKE_PID
             RC=$?
             echo "process died rc=$RC"
-            head -30 /tmp/smoke.log
-            DYLD_ERR=$(grep -iE "dyld\[|Library not loaded|image not found|Symbol not found" /tmp/smoke.log | head -3)
-            if [ -n "$DYLD_ERR" ]; then
-              echo "FATAL: dylib load failure:"
-              echo "$DYLD_ERR"
+          fi
+          echo "=== smoke.log tail ==="
+          tail -40 /tmp/smoke.log
+          if grep -qiE "dyld\[|Library not loaded|image not found|Symbol not found" /tmp/smoke.log; then
+            echo "FATAL: dylib load failure"; exit 1
+          fi
+          if grep -qiE "NSInvalidArgumentException|doesNotRecognizeSelector|Terminating app" /tmp/smoke.log; then
+            echo "FATAL: objc exception during startup"; exit 1
+          fi
+          if [ $ALIVE -eq 1 ]; then
+            if ! grep -qiE "Picked surface configuration|Created .* swapchain" /tmp/smoke.log; then
+              echo "FATAL: app alive but no Vulkan swapchain created - window rendering broken"
               exit 1
             fi
-            echo "no dyld errors -> libraries resolved (GUI abort on headless runner is expected)"
           fi
+          screencapture -x /tmp/smoke.png 2>/dev/null || true
+          if [ -f /tmp/smoke.png ]; then
+            SIZE=$(stat -f%z /tmp/smoke.png 2>/dev/null || echo 0)
+            echo "screenshot size: $SIZE bytes"
+          fi
+          kill -9 $SMOKE_PID 2>/dev/null
+          if [ $ALIVE -eq 0 ]; then
+            echo "FATAL: app crashed during startup"
+            exit 1
+          fi
+          echo "SMOKE TEST PASSED: window + vulkan OK"
 
       - name: Upload chiaki-ng Artifact
         uses: actions/upload-artifact@v4
