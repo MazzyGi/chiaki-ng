@@ -779,7 +779,30 @@ void QmlMainWindow::createSwapchain()
 #elif defined(Q_OS_MACOS)
     VkMetalSurfaceCreateInfoEXT surfaceInfo = {};
     surfaceInfo.sType = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT;
-    surfaceInfo.pLayer = static_cast<const CAMetalLayer*>(reinterpret_cast<void*(*)(id, SEL)>(objc_msgSend)(reinterpret_cast<id>(winId()), sel_registerName("layer")));
+    // winId() is an NSView whose -layer may not be a CAMetalLayer on newer
+    // Qt/macOS combinations (MoltenVK then throws doesNotRecognizeSelector
+    // inside MVKSurface::getNaturalExtent). Prefer -backingLayer when
+    // available and fall back to installing a CAMetalLayer on the view.
+    id view = reinterpret_cast<id>(winId());
+    id layer = reinterpret_cast<id>(objc_msgSend)(view, sel_registerName("layer"));
+    id backing = reinterpret_cast<id>(objc_msgSend)(view, sel_registerName("backingLayer"));
+    if (backing)
+        layer = backing;
+    BOOL is_metal = NO;
+    if (layer)
+        is_metal = reinterpret_cast<BOOL(*)(id, SEL, Class)>(objc_msgSend)(layer, sel_registerName("isKindOfClass:"), objc_getClass("CAMetalLayer"));
+    if (!is_metal)
+    {
+        // make the view layer-backed with a metal layer
+        reinterpret_cast<void(*)(id, SEL, BOOL)>(objc_msgSend)(view, sel_registerName("setWantsLayer:"), YES);
+        id metal_layer = reinterpret_cast<id(*)(Class, SEL)>(objc_msgSend)(objc_getClass("CAMetalLayer"), sel_registerName("layer"));
+        if (metal_layer)
+        {
+            reinterpret_cast<void(*)(id, SEL, id)>(objc_msgSend)(view, sel_registerName("setLayer:"), metal_layer);
+            layer = metal_layer;
+        }
+    }
+    surfaceInfo.pLayer = static_cast<const CAMetalLayer*>(layer);
     err = vk_funcs.vkCreateMetalSurfaceEXT(placebo_vk_inst->instance, &surfaceInfo, nullptr, &surface);
 #elif defined(Q_OS_WIN32)
     VkWin32SurfaceCreateInfoKHR surfaceInfo = {};
