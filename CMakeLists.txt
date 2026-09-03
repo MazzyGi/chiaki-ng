@@ -197,6 +197,10 @@ if(CHIAKI_ENABLE_CLI)
 	add_subdirectory(cli)
 endif()
 
+if(UNIX AND NOT APPLE AND NOT CHIAKI_IS_SWITCH AND NOT ANDROID)
+	add_subdirectory(daemon)
+endif()
+
 if(CHIAKI_ENABLE_STEAMDECK_NATIVE)
 	find_package(HIDAPI QUIET)
 	find_package(PkgConfig REQUIRED)
