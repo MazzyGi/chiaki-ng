@@ -128,7 +128,7 @@ jobs:
           # GitHub macOS runners have a paravirtual GPU (AppleParavirtDevice)
           # which MoltenVK cannot drive - that specific exception is a CI
           # environment artifact, not a code bug. Real Macs never hit it.
-          if grep -qiE "NSInvalidArgumentException|doesNotRecognizeSelector|Terminating app" /tmp/smoke.log              && ! grep -q "AppleParavirtDevice" /tmp/smoke.log; then
+          if grep -qiE "NSInvalidArgumentException|doesNotRecognizeSelector|Terminating app" /tmp/smoke.log && ! grep -q "AppleParavirtDevice" /tmp/smoke.log; then
             echo "FATAL: objc exception during startup"; exit 1
           fi
           if [ $ALIVE -eq 1 ]; then
