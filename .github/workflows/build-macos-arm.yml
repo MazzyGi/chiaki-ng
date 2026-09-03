@@ -68,8 +68,6 @@ jobs:
           ln -s libvulkan.1.dylib chiaki-ng.app/Contents/Frameworks/vulkan || true
           codesign --force --entitlements gui/entitlements.xml --deep --sign - chiaki-ng.app
 
-      - name: Launch smoke test (window + vulkan)
-
       - name: Verify dynamic library resolution
         run: |
           echo "=== chiaki executable deps ==="
