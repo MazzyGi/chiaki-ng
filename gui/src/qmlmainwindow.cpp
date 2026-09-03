@@ -21,6 +21,7 @@
 #include <QQmlComponent>
 #include <QQuickRenderTarget>
 #include <QQuickRenderControl>
+#include <QSGRendererInterface>
 #include <QQuickGraphicsDevice>
 #if defined(Q_OS_MACOS)
 #include <objc/message.h>
@@ -599,6 +600,8 @@ void QmlMainWindow::init(Settings *settings, bool exit_app_on_stream_exit)
 
     QQuickWindow::setDefaultAlphaBuffer(true);
     QQuickWindow::setGraphicsApi(QSGRendererInterface::Vulkan);
+    // Qt 6.10+ honors QSG_RHI_BACKEND; make sure nobody overrides Vulkan
+    qputenv("QSG_RHI_BACKEND", "vulkan");
     quick_window = new QQuickWindow(quick_render);
     quick_window->setVulkanInstance(qt_vk_inst);
     quick_window->setGraphicsDevice(QQuickGraphicsDevice::fromDeviceObjects(placebo_vulkan->phys_device, placebo_vulkan->device, placebo_vulkan->queue_graphics.index));
@@ -893,7 +896,35 @@ void QmlMainWindow::sync()
     Q_ASSERT(QThread::currentThread() == render_thread);
 
     if (!quick_tex)
+    {
+        qCWarning(chiakiGui) << "sync: no quick_tex yet";
         return;
+    }
+
+    static bool rhi_logged = false;
+    if (!rhi_logged)
+    {
+        rhi_logged = true;
+        QSGRendererInterface *rif = quick_window->rendererInterface();
+        if (rif)
+        {
+            QByteArray api = "unknown";
+            switch (rif->graphicsApi()) {
+            case QSGRendererInterface::Vulkan: api = "vulkan"; break;
+            case QSGRendererInterface::Metal: api = "metal"; break;
+            case QSGRendererInterface::OpenGL: api = "opengl"; break;
+            case QSGRendererInterface::Direct3D11: api = "d3d11"; break;
+            case QSGRendererInterface::Direct3D12: api = "d3d12"; break;
+            case QSGRendererInterface::Null: api = "null"; break;
+            default: break;
+            }
+            qCInfo(chiakiGui) << "QRhi backend:" << api
+                << "device:" << rif->getResource(quick_window, QSGRendererInterface::DeviceResource)
+                << "physdev:" << rif->getResource(quick_window, QSGRendererInterface::PhysicalDeviceResource);
+        }
+        else
+            qCWarning(chiakiGui) << "QRhi: no renderer interface!";
+    }
 
     beginFrame();
     quick_need_render = quick_render->sync();
