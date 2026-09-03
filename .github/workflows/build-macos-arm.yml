@@ -105,6 +105,10 @@ jobs:
           # window + Vulkan swapchain, verify no objc exceptions, screenshot
           # the screen to prove the UI rendered.
           set +e
+          # CI runners have a paravirtual GPU that crashes MoltenVK while
+          # probing Metal3 argument buffers - disable them so the swapchain
+          # path can be exercised (real Macs are unaffected either way)
+          export MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS=NO
           chiaki-ng.app/Contents/MacOS/chiaki > /tmp/smoke.log 2>&1 &
           SMOKE_PID=$!
           sleep 12
