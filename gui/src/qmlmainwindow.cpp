@@ -837,10 +837,18 @@ void QmlMainWindow::resizeSwapchain()
         createSwapchain();
 
     const QSize window_size(width() * devicePixelRatio(), height() * devicePixelRatio());
-    if (window_size == swapchain_size)
+    if (window_size.isEmpty() || window_size == swapchain_size)
         return;
 
     swapchain_size = window_size;
+#if defined(Q_OS_MACOS)
+    // keep the CAMetalLayer's drawable size in sync with the window;
+    // a freshly installed layer defaults to 0x0 and crashes pl_tex_recreate
+    {
+        extern void mac_sync_layer_drawable_size(void *nsview, int w, int h);
+        mac_sync_layer_drawable_size(reinterpret_cast<void*>(winId()), window_size.width(), window_size.height());
+    }
+#endif
     pl_swapchain_resize(placebo_swapchain, &swapchain_size.rwidth(), &swapchain_size.rheight());
 
     struct pl_tex_params tex_params = {

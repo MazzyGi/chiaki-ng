@@ -103,6 +103,29 @@ void mac_awdl_restore_on_exit()
         run_privileged_ifconfig("up");
 }
 
+// Keep the view's layer drawable size in sync with the QWindow size.
+// A freshly installed CAMetalLayer defaults to 0x0 which crashes
+// pl_tex_recreate (params->w > 0 assertion).
+void mac_sync_layer_drawable_size(void *nsview, int w, int h)
+{
+    @autoreleasepool {
+        if (!nsview || w <= 0 || h <= 0)
+            return;
+        id view = reinterpret_cast<id>(nsview);
+        SEL layer_sel = sel_registerName("layer");
+        if (!(BOOL)reinterpret_cast<void *(*)(id, SEL, void *)>(objc_msgSend)(view, sel_registerName("respondsToSelector:"), (void *)layer_sel))
+            return;
+        id layer = static_cast<id>(reinterpret_cast<void *(*)(id, SEL)>(objc_msgSend)(view, layer_sel));
+        if (!layer)
+            return;
+        if (!(BOOL)reinterpret_cast<void *(*)(id, SEL, void *)>(objc_msgSend)(layer, sel_registerName("respondsToSelector:"), (void *)sel_registerName("setDrawableSize:")))
+            return;
+        CGSize size = { (CGFloat)w, (CGFloat)h };
+        typedef void (*set_size_fn)(id, SEL, CGSize);
+        reinterpret_cast<set_size_fn>(objc_msgSend)(layer, sel_registerName("setDrawableSize:"), size);
+    }
+}
+
 void *mac_keep_awake_begin()
 {
     // prevent display sleep + system idle sleep while streaming
