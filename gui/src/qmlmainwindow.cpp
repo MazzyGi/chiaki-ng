@@ -842,10 +842,13 @@ void QmlMainWindow::resizeSwapchain()
 
     swapchain_size = window_size;
 #if defined(Q_OS_MACOS)
-    // keep the CAMetalLayer's drawable size in sync with the window;
-    // a freshly installed layer defaults to 0x0 and crashes pl_tex_recreate
+    // keep the CAMetalLayer attached to the (current) view layer and in
+    // sync with the window size; a detached or 0-sized layer yields a
+    // blank window / pl_tex_recreate w>0 failure
     {
+        extern void mac_ensure_surface_layer_attached(void *nsview);
         extern void mac_sync_layer_drawable_size(void *nsview, int w, int h);
+        mac_ensure_surface_layer_attached(reinterpret_cast<void*>(winId()));
         mac_sync_layer_drawable_size(reinterpret_cast<void*>(winId()), window_size.width(), window_size.height());
     }
 #endif

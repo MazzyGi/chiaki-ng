@@ -93,6 +93,31 @@ void mac_awdl_restore_on_exit()
         run_privileged_ifconfig("up");
 }
 
+// Self-healing: re-attach the surface layer if Qt swapped out the view's
+// backing layer (happens on unexpose/re-expose cycles) leaving our layer
+// orphaned — presents would then go nowhere (white window).
+void mac_ensure_surface_layer_attached(void *nsview)
+{
+    @autoreleasepool {
+        if (!nsview)
+            return;
+        NSView *view = (__bridge NSView *)nsview;
+        CAMetalLayer *layer = g_surface_layer;
+        if (!layer)
+            return;
+        [view setWantsLayer:YES];
+        CALayer *host = [view layer];
+        if (!host)
+            return;
+        if (layer.superlayer != host)
+        {
+            if (layer.superlayer)
+                [layer removeFromSuperlayer];
+            [host addSublayer:layer];
+        }
+    }
+}
+
 // Keep the Vulkan surface layer filling the view: both its on-screen
 // frame (defaults to CGRectZero → invisible output) and its drawable
 // size (backing store; 0x0 → pl_tex_recreate w>0 failure).
