@@ -135,6 +135,9 @@ jobs:
             fi
           fi
           screencapture -x /tmp/smoke.png 2>/dev/null || true
+          # capture just the app window if possible (full-desktop fallback above)
+          osascript -e 'tell application "System Events" to get name of every process whose name is "chiaki"' >/dev/null 2>&1 || true
+          screencapture -x -l "$(osascript -e 'tell application "System Events" to tell process "chiaki" to get id of window 1' 2>/dev/null)" /tmp/smoke_window.png 2>/dev/null || cp /tmp/smoke.png /tmp/smoke_window.png 2>/dev/null || true
           if [ -f /tmp/smoke.png ]; then
             SIZE=$(stat -f%z /tmp/smoke.png 2>/dev/null || echo 0)
             echo "screenshot size: $SIZE bytes"
@@ -157,6 +160,16 @@ jobs:
             fi
           fi
           echo "SMOKE TEST PASSED"
+
+      - name: Upload smoke screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-screenshots
+          path: |
+            /tmp/smoke.png
+            /tmp/smoke_window.png
+          if-no-files-found: ignore
 
       - name: Package dmg (after smoke test released the app)
         run: |

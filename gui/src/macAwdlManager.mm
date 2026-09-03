@@ -19,24 +19,47 @@
 // Runs inside an autorelease pool because this may execute on a render
 // thread without one.
 static CAMetalLayer *g_surface_layer = nil;
+static bool g_layer_is_ours = false; // true only for the addSublayer fallback
 
 CAMetalLayer *mac_resolve_metal_layer(void *nsview)
 {
     @autoreleasepool {
         if (!nsview)
             return nil;
-        NSView *view = (__bridge NSView *)nsview;
         if (g_surface_layer)
             return g_surface_layer;
-
+        NSView *view = (__bridge NSView *)nsview;
         [view setWantsLayer:YES];
-        CALayer *host = [view layer];
-        if (!host)
+        CALayer *layer = [view layer];
+        if (!layer)
             return nil;
 
+        // Qt 6.9+ wraps the real layer in a QContainerLayer:
+        //   view.layer = QContainerLayer, its .contentLayer = CAMetalLayer.
+        // That inner layer is Qt-managed: it stays in the layer tree and its
+        // drawableSize/frame are synced by the container's layout. Use the
+        // same resolution as QCocoaWindow::contentLayer().
+        SEL cl_sel = sel_registerName("contentLayer");
+        if ([layer respondsToSelector:cl_sel]) {
+            CALayer *content = [layer performSelector:cl_sel];
+            if ([content isKindOfClass:[CAMetalLayer class]]) {
+                g_surface_layer = (CAMetalLayer *)content;
+                g_layer_is_ours = false;
+                return g_surface_layer;
+            }
+        }
+
+        if ([layer isKindOfClass:[CAMetalLayer class]]) {
+            g_surface_layer = (CAMetalLayer *)layer;
+            g_layer_is_ours = false;
+            return g_surface_layer;
+        }
+
+        // Fallback: attach our own metal layer as a sublayer.
         CAMetalLayer *metal = [[CAMetalLayer alloc] init];
-        [host addSublayer:metal];
+        [layer addSublayer:metal];
         g_surface_layer = metal;
+        g_layer_is_ours = true;
         return metal;
     }
 }
@@ -99,8 +122,8 @@ void mac_awdl_restore_on_exit()
 void mac_ensure_surface_layer_attached(void *nsview)
 {
     @autoreleasepool {
-        if (!nsview)
-            return;
+        if (!nsview || !g_layer_is_ours)
+            return; // Qt-managed layer: nothing to do
         NSView *view = (__bridge NSView *)nsview;
         CAMetalLayer *layer = g_surface_layer;
         if (!layer)
@@ -118,9 +141,9 @@ void mac_ensure_surface_layer_attached(void *nsview)
     }
 }
 
-// Keep the Vulkan surface layer filling the view: both its on-screen
-// frame (defaults to CGRectZero → invisible output) and its drawable
-// size (backing store; 0x0 → pl_tex_recreate w>0 failure).
+// Keep the Vulkan surface layer in sync with the window size.
+// When we resolved Qt's own CAMetalLayer (QContainerLayer path) the frame
+// is managed by Qt; only the backing store size needs an update.
 void mac_sync_layer_drawable_size(void *nsview, int w, int h)
 {
     @autoreleasepool {
@@ -131,15 +154,17 @@ void mac_sync_layer_drawable_size(void *nsview, int w, int h)
             return;
         [CATransaction begin];
         [CATransaction setDisableActions:YES];
-        CGFloat scale = 1.0;
-        if (NSView *view = (__bridge NSView *)nsview)
+        if (g_layer_is_ours)
         {
-            if (NSWindow *win = [view window])
-                scale = win.backingScaleFactor;
+            // our fallback sublayer: position + scale it ourselves
+            CGFloat scale = 1.0;
+            if (NSView *view = (__bridge NSView *)nsview)
+                if (NSWindow *win = [view window])
+                    scale = win.backingScaleFactor;
+            [layer setFrame:CGRectMake(0, 0, w / scale, h / scale)];
+            [layer setContentsScale:scale];
         }
-        [layer setFrame:CGRectMake(0, 0, w / scale, h / scale)];
         [layer setDrawableSize:CGSizeMake(w, h)];
-        [layer setContentsScale:scale];
         [CATransaction commit];
     }
 }
