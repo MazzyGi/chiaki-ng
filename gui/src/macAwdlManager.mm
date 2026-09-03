@@ -3,6 +3,7 @@
 
 #import <Security/Security.h>
 #import <Foundation/Foundation.h>
+#import <AppKit/AppKit.h>
 #import <QuartzCore/QuartzCore.h>
 #import <IOKit/pwr_mgt/IOPMLib.h>
 #import <objc/message.h>
@@ -24,34 +25,19 @@ CAMetalLayer *mac_resolve_metal_layer(void *nsview)
     @autoreleasepool {
         if (!nsview)
             return nil;
-        id view = reinterpret_cast<id>(nsview);
-        SEL layer_sel = sel_registerName("layer");
-        SEL wants_layer_sel = sel_registerName("setWantsLayer:");
-        SEL set_layer_sel = sel_registerName("setLayer:");
-        SEL kind_sel = sel_registerName("isKindOfClass:");
+        NSView *view = (__bridge NSView *)nsview;
+        if (g_surface_layer)
+            return g_surface_layer;
 
-        // Only use selectors the view actually implements.
-        if (!(BOOL)reinterpret_cast<void *(*)(id, SEL, void *)>(objc_msgSend)(view, sel_registerName("respondsToSelector:"), (void *)layer_sel))
+        [view setWantsLayer:YES];
+        CALayer *host = [view layer];
+        if (!host)
             return nil;
 
-        id layer = static_cast<id>(reinterpret_cast<void *(*)(id, SEL)>(objc_msgSend)(view, layer_sel));
-        BOOL is_metal = NO;
-        if (layer)
-            is_metal = (BOOL)reinterpret_cast<void *(*)(id, SEL, void *)>(objc_msgSend)(layer, kind_sel, objc_getClass("CAMetalLayer"));
-        if (!is_metal)
-        {
-            // Ensure the view is layer-backed and install a CAMetalLayer.
-            if ((BOOL)reinterpret_cast<void *(*)(id, SEL, void *)>(objc_msgSend)(view, sel_registerName("respondsToSelector:"), (void *)wants_layer_sel))
-                reinterpret_cast<void (*)(id, SEL, BOOL)>(objc_msgSend)(view, wants_layer_sel, YES);
-            id metal_cls = reinterpret_cast<id>(objc_getClass("CAMetalLayer"));
-            id metal_layer = static_cast<id>(reinterpret_cast<void *(*)(id, SEL)>(objc_msgSend)(metal_cls, layer_sel));
-            if (metal_layer && (BOOL)reinterpret_cast<void *(*)(id, SEL, void *)>(objc_msgSend)(view, sel_registerName("respondsToSelector:"), (void *)set_layer_sel))
-            {
-                reinterpret_cast<void (*)(id, SEL, id)>(objc_msgSend)(view, set_layer_sel, metal_layer);
-                layer = metal_layer;
-            }
-        }
-        return static_cast<CAMetalLayer *>(g_surface_layer = layer);
+        CAMetalLayer *metal = [[CAMetalLayer alloc] init];
+        [host addSublayer:metal];
+        g_surface_layer = metal;
+        return metal;
     }
 }
 
@@ -107,9 +93,9 @@ void mac_awdl_restore_on_exit()
         run_privileged_ifconfig("up");
 }
 
-// Keep the view's layer drawable size in sync with the QWindow size.
-// A freshly installed CAMetalLayer defaults to 0x0 which crashes
-// pl_tex_recreate (params->w > 0 assertion).
+// Keep the Vulkan surface layer filling the view: both its on-screen
+// frame (defaults to CGRectZero → invisible output) and its drawable
+// size (backing store; 0x0 → pl_tex_recreate w>0 failure).
 void mac_sync_layer_drawable_size(void *nsview, int w, int h)
 {
     @autoreleasepool {
@@ -118,8 +104,18 @@ void mac_sync_layer_drawable_size(void *nsview, int w, int h)
         CAMetalLayer *layer = g_surface_layer;
         if (!layer)
             return;
-        CGSize size = { (CGFloat)w, (CGFloat)h };
-        [layer setDrawableSize:size];
+        [CATransaction begin];
+        [CATransaction setDisableActions:YES];
+        CGFloat scale = 1.0;
+        if (NSView *view = (__bridge NSView *)nsview)
+        {
+            if (NSWindow *win = [view window])
+                scale = win.backingScaleFactor;
+        }
+        [layer setFrame:CGRectMake(0, 0, w / scale, h / scale)];
+        [layer setDrawableSize:CGSizeMake(w, h)];
+        [layer setContentsScale:scale];
+        [CATransaction commit];
     }
 }
 
