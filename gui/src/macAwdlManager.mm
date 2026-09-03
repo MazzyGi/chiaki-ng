@@ -11,10 +11,14 @@
 
 // Resolve a CAMetalLayer for a Qt NSView. Newer Qt/macOS combinations may
 // expose a non-metal (or no) layer via -layer, which makes MoltenVK throw
-// doesNotRecognizeSelector inside MVKSurface::getNaturalExtent. Prefer
-// -backingLayer when present; otherwise install a fresh CAMetalLayer.
+// doesNotRecognizeSelector inside MVKSurface::getNaturalExtent. Install a
+// fresh CAMetalLayer when needed and remember it: Qt may swap out the
+// view's -layer behind our back, so later drawableSize syncs must target
+// the layer we actually handed to VkMetalSurfaceEXT.
 // Runs inside an autorelease pool because this may execute on a render
 // thread without one.
+static CAMetalLayer *g_surface_layer = nil;
+
 CAMetalLayer *mac_resolve_metal_layer(void *nsview)
 {
     @autoreleasepool {
@@ -47,7 +51,7 @@ CAMetalLayer *mac_resolve_metal_layer(void *nsview)
                 layer = metal_layer;
             }
         }
-        return static_cast<CAMetalLayer *>(layer);
+        return static_cast<CAMetalLayer *>(g_surface_layer = layer);
     }
 }
 
@@ -109,20 +113,13 @@ void mac_awdl_restore_on_exit()
 void mac_sync_layer_drawable_size(void *nsview, int w, int h)
 {
     @autoreleasepool {
-        if (!nsview || w <= 0 || h <= 0)
+        if (w <= 0 || h <= 0)
             return;
-        id view = reinterpret_cast<id>(nsview);
-        SEL layer_sel = sel_registerName("layer");
-        if (!(BOOL)reinterpret_cast<void *(*)(id, SEL, void *)>(objc_msgSend)(view, sel_registerName("respondsToSelector:"), (void *)layer_sel))
-            return;
-        id layer = static_cast<id>(reinterpret_cast<void *(*)(id, SEL)>(objc_msgSend)(view, layer_sel));
+        CAMetalLayer *layer = g_surface_layer;
         if (!layer)
             return;
-        if (!(BOOL)reinterpret_cast<void *(*)(id, SEL, void *)>(objc_msgSend)(layer, sel_registerName("respondsToSelector:"), (void *)sel_registerName("setDrawableSize:")))
-            return;
         CGSize size = { (CGFloat)w, (CGFloat)h };
-        typedef void (*set_size_fn)(id, SEL, CGSize);
-        reinterpret_cast<set_size_fn>(objc_msgSend)(layer, sel_registerName("setDrawableSize:"), size);
+        [layer setDrawableSize:size];
     }
 }
 

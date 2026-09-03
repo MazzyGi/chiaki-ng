@@ -850,6 +850,12 @@ void QmlMainWindow::resizeSwapchain()
     }
 #endif
     pl_swapchain_resize(placebo_swapchain, &swapchain_size.rwidth(), &swapchain_size.rheight());
+    if (swapchain_size.isEmpty())
+    {
+        qCWarning(chiakiGui) << "swapchain resized to empty, retrying later";
+        swapchain_size = QSize();
+        return;
+    }
 
     struct pl_tex_params tex_params = {
         .w = swapchain_size.width(),
