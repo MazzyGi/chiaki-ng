@@ -121,6 +121,8 @@ jobs:
             RC=$?
             echo "process died rc=$RC"
           fi
+          echo "=== QRhi / swapchain diagnostics ==="
+          grep -iE "QRhi|quick_tex|renderer interface|Picked surface|Created .* swapchain|Failed" /tmp/smoke.log | head -30 || true
           echo "=== smoke.log tail ==="
           tail -40 /tmp/smoke.log
           if grep -qiE "dyld\[|Library not loaded|image not found|Symbol not found" /tmp/smoke.log; then
@@ -173,6 +175,7 @@ jobs:
           path: |
             /tmp/smoke.png
             /tmp/smoke_window.png
+            /tmp/smoke.log
           if-no-files-found: ignore
 
       - name: Package dmg (after smoke test released the app)
